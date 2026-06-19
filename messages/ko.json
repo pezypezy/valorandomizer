@@ -1,0 +1,45 @@
+{
+  "app": {
+    "title": "VALORANDOMIZER",
+    "tagline": "팀 랜덤 피커",
+    "subtitle": "롤 구성을 정하고 5명의 요원을 랜덤으로 소집하세요."
+  },
+  "roles": {
+    "Duelist": "타격대",
+    "Initiator": "척후대",
+    "Controller": "감시자",
+    "Sentinel": "전략가"
+  },
+  "config": {
+    "heading": "롤 구성",
+    "available": "{count}명",
+    "total": "합계",
+    "remaining": "{count} 남음",
+    "slash": "/ {size}",
+    "presets": "프리셋",
+    "balanced": "밸런스",
+    "fullRandom": "완전 랜덤",
+    "reset": "초기화"
+  },
+  "actions": {
+    "randomize": "소집하기",
+    "rolling": "소집 중…",
+    "rollAgain": "다시 소집",
+    "mustTotal": "합계를 {size}(으)로 맞추세요",
+    "reroll": "다시 뽑기",
+    "lock": "고정",
+    "locked": "고정됨",
+    "copy": "결과 복사",
+    "copied": "복사됨"
+  },
+  "result": {
+    "heading": "소집된 팀",
+    "empty": "롤 구성을 정하고 소집하기를 누르세요."
+  },
+  "locale": {
+    "ja": "日本語",
+    "en": "English",
+    "ko": "한국어",
+    "switch": "언어"
+  }
+}

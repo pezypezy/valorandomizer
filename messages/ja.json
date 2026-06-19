@@ -1,0 +1,45 @@
+{
+  "app": {
+    "title": "VALORANDOMIZER",
+    "tagline": "チーム・ランダム・ピッカー",
+    "subtitle": "ロール構成を決めて、5人のエージェントをランダムに招集せよ。"
+  },
+  "roles": {
+    "Duelist": "デュエリスト",
+    "Initiator": "イニシエーター",
+    "Controller": "コントローラー",
+    "Sentinel": "センチネル"
+  },
+  "config": {
+    "heading": "ロール構成",
+    "available": "{count}体",
+    "total": "合計",
+    "remaining": "残り {count}",
+    "slash": "/ {size}",
+    "presets": "プリセット",
+    "balanced": "バランス",
+    "fullRandom": "フルランダム",
+    "reset": "リセット"
+  },
+  "actions": {
+    "randomize": "招集する",
+    "rolling": "招集中…",
+    "rollAgain": "もう一度",
+    "mustTotal": "合計を {size} にしてください",
+    "reroll": "振り直す",
+    "lock": "固定",
+    "locked": "固定中",
+    "copy": "結果をコピー",
+    "copied": "コピーしました"
+  },
+  "result": {
+    "heading": "招集されたチーム",
+    "empty": "ロール構成を決めて「招集する」を押してください。"
+  },
+  "locale": {
+    "ja": "日本語",
+    "en": "English",
+    "ko": "한국어",
+    "switch": "言語"
+  }
+}

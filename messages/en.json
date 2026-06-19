@@ -1,0 +1,45 @@
+{
+  "app": {
+    "title": "VALORANDOMIZER",
+    "tagline": "TEAM RANDOM PICKER",
+    "subtitle": "Set your role composition and summon five agents at random."
+  },
+  "roles": {
+    "Duelist": "Duelist",
+    "Initiator": "Initiator",
+    "Controller": "Controller",
+    "Sentinel": "Sentinel"
+  },
+  "config": {
+    "heading": "Role Composition",
+    "available": "{count} agents",
+    "total": "Total",
+    "remaining": "{count} left",
+    "slash": "/ {size}",
+    "presets": "Presets",
+    "balanced": "Balanced",
+    "fullRandom": "Full Random",
+    "reset": "Reset"
+  },
+  "actions": {
+    "randomize": "Summon",
+    "rolling": "Summoning…",
+    "rollAgain": "Roll Again",
+    "mustTotal": "Counts must total {size}",
+    "reroll": "Reroll",
+    "lock": "Lock",
+    "locked": "Locked",
+    "copy": "Copy result",
+    "copied": "Copied"
+  },
+  "result": {
+    "heading": "Your Squad",
+    "empty": "Set your role composition and hit Summon."
+  },
+  "locale": {
+    "ja": "日本語",
+    "en": "English",
+    "ko": "한국어",
+    "switch": "Language"
+  }
+}

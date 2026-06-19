@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand + surfaces */
+  --color-bg: #1a242e;
+  --color-bg-deep: #10171e;
+  --color-surface: #1f2b37;
+  --color-surface-2: #243341;
+  --color-line: rgba(255, 255, 255, 0.1);
+  --color-ink: #e8eef3;
+  --color-muted: #8aa0b2;
+
+  --color-primary: #ff4655;
+  --color-primary-soft: #ff6b78;
+
+  /* Role accents */
+  --color-duelist: #ff4655;
+  --color-initiator: #f5d04e;
+  --color-controller: #9d6bff;
+  --color-sentinel: #36d6b0;
+}
+
+/* Map next/font CSS variables onto Tailwind font tokens (inline = reference, not copy). */
+@theme inline {
+  --font-display: var(--font-hikomi);
+  --font-sans: var(--font-noto);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg-deep);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Display font helper — Hikomi for headings, falls back to body font. */
+.font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  letter-spacing: 0.04em;
+}
+
+/* ---- Sci-Fi clip-paths (arwes-style angular frames) ---- */
+.clip-frame {
+  clip-path: polygon(
+    0 14px,
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px)
+  );
+}
+
+.clip-btn {
+  clip-path: polygon(
+    10px 0,
+    100% 0,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    0 100%,
+    0 10px
+  );
+}
+
+.clip-card {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 18px) 0,
+    100% 18px,
+    100% 100%,
+    18px 100%,
+    0 calc(100% - 18px)
+  );
+}
+
+/* ---- Animated backdrop ---- */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 35%, transparent 80%);
+  animation: grid-pan 24s linear infinite;
+}
+
+@keyframes grid-pan {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 46px;
+  }
+}
+
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0.72;
+  }
+  96% {
+    opacity: 0.95;
+  }
+}
+
+.text-glitch {
+  animation: flicker 6s infinite steps(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-grid,
+  .text-glitch {
+    animation: none;
+  }
+}
