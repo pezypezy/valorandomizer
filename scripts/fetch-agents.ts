@@ -34,6 +34,14 @@ function toHex(c: string): string {
   return `#${c.slice(0, 6)}`;
 }
 
+/** "KAY/O" -> "kay-o", "Phoenix" -> "phoenix" (safe, readable folder name) */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 async function download(url: string, dest: string): Promise<void> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Download failed ${res.status}: ${url}`);
@@ -65,8 +73,13 @@ async function main() {
   await mkdir(PUBLIC_AGENTS, { recursive: true });
 
   const records: string[] = [];
+  const slugs = new Set<string>();
   for (const a of agents) {
-    const dir = path.join(PUBLIC_AGENTS, a.uuid);
+    const slug = slugify(a.displayName);
+    if (slugs.has(slug)) throw new Error(`Duplicate agent slug: ${slug}`);
+    slugs.add(slug);
+
+    const dir = path.join(PUBLIC_AGENTS, slug);
     await mkdir(dir, { recursive: true });
     await download(a.fullPortrait!, path.join(dir, "portrait.png"));
     await download(a.displayIcon!, path.join(dir, "icon.png"));
@@ -77,8 +90,8 @@ async function main() {
         `    id: ${JSON.stringify(a.uuid)},\n` +
         `    name: ${JSON.stringify(a.displayName)},\n` +
         `    role: ${JSON.stringify(a.role!.displayName as Role)},\n` +
-        `    portrait: ${JSON.stringify(`/agents/${a.uuid}/portrait.png`)},\n` +
-        `    icon: ${JSON.stringify(`/agents/${a.uuid}/icon.png`)},\n` +
+        `    portrait: ${JSON.stringify(`/agents/${slug}/portrait.png`)},\n` +
+        `    icon: ${JSON.stringify(`/agents/${slug}/icon.png`)},\n` +
         `    gradient: ${JSON.stringify(gradient)},\n` +
         `  }`,
     );
