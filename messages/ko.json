@@ -2,7 +2,7 @@
   "app": {
     "title": "VALORANDOMIZER",
     "tagline": "팀 랜덤 피커",
-    "subtitle": "롤 구성을 정하고 5명의 요원을 랜덤으로 소집하세요."
+    "subtitle": "역할 구성을 정하고 5명의 요원을 무작위로 소집하세요."
   },
   "mode": {
     "back": "뒤로",
@@ -16,18 +16,18 @@
   "roles": {
     "Duelist": "타격대",
     "Initiator": "척후대",
-    "Controller": "감시자",
-    "Sentinel": "전략가"
+    "Controller": "전략가",
+    "Sentinel": "감시자"
   },
   "config": {
-    "heading": "롤 구성",
+    "heading": "역할 구성",
     "available": "{count}명",
     "total": "합계",
     "remaining": "{count} 남음",
     "slash": "/ {size}",
     "presets": "프리셋",
     "balanced": "밸런스",
-    "fullRandom": "완전 랜덤",
+    "fullRandom": "완전 무작위",
     "reset": "초기화"
   },
   "actions": {
@@ -43,38 +43,38 @@
   },
   "result": {
     "heading": "소집된 팀",
-    "empty": "롤 구성을 정하고 소집하기를 누르세요."
+    "empty": "역할 구성을 정하고 소집하기를 누르세요."
   },
   "proPick": {
     "heading": "Pro Pick Draft",
     "subtitle": "과거 프로 팀의 픽에서 커스텀 게임용 팀을 뽑습니다.",
-    "count": "{count} picks",
-    "all": "All",
-    "map": "Map",
-    "event": "Event",
-    "region": "Region",
-    "team": "Team",
-    "mode": "Mode",
-    "both": "2 teams",
-    "single": "1 team",
-    "mirror": "Mirror",
-    "pick": "Pick",
+    "count": "{count}개 픽",
+    "all": "전체",
+    "map": "맵",
+    "event": "대회",
+    "region": "지역",
+    "team": "팀",
+    "mode": "모드",
+    "both": "2팀",
+    "single": "1팀",
+    "mirror": "미러",
+    "pick": "뽑기",
     "noPick": "선택 없음",
-    "source": "Source",
-    "detail": "DETAIL",
-    "dataCounter": "Data {count}/{total}",
-    "dataListHeading": "Draw Data",
-    "dataListCount": "{count} draw entries",
-    "dataListClose": "Close",
-    "dataListEmpty": "No draw data",
-    "historyHeading": "Match Records",
-    "historyCount": "{count} records",
-    "historyClear": "Clear",
-    "recordTeamA": "Team A win",
-    "recordTeamB": "Team B win",
-    "recordDraw": "Draw",
-    "outcomeWinner": "{team} win",
-    "outcomeDraw": "Draw"
+    "source": "출처",
+    "detail": "자세히",
+    "dataCounter": "데이터 {count}/{total}",
+    "dataListHeading": "추첨 데이터",
+    "dataListCount": "추첨 대상 {count}건",
+    "dataListClose": "닫기",
+    "dataListEmpty": "추첨 대상 데이터가 없습니다",
+    "historyHeading": "경기 기록",
+    "historyCount": "기록 {count}건",
+    "historyClear": "지우기",
+    "recordTeamA": "Team A 승리",
+    "recordTeamB": "Team B 승리",
+    "recordDraw": "무승부",
+    "outcomeWinner": "{team} 승리",
+    "outcomeDraw": "무승부"
   },
   "locale": {
     "ja": "日本語",
