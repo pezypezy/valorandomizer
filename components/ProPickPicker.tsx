@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AGENTS } from "@/lib/agents";
 import { PRO_PICKS, type ProPick } from "@/lib/pro-picks";
@@ -10,6 +10,14 @@ import { Button } from "./ui/Button";
 
 type SideMode = "both" | "single" | "mirror";
 type DrawnPick = ProPick & { drawId: number };
+type MatchOutcome = "left" | "right" | "draw";
+type MatchRecord = {
+  id: string;
+  recordedAt: string;
+  outcome: MatchOutcome;
+  left: ProPick;
+  right: ProPick | null;
+};
 type PickFilters = {
   map: string;
   event: string;
@@ -19,6 +27,8 @@ type PickFilters = {
 
 const ALL = "all";
 const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, region: ALL, team: ALL };
+const RECORD_STORAGE_KEY = "valorandomizer.proPick.matchRecords";
+const MAX_RECORDS = 100;
 
 export function ProPickPicker() {
   const t = useTranslations();
@@ -28,6 +38,16 @@ export function ProPickPicker() {
   const [left, setLeft] = useState<DrawnPick | null>(null);
   const [right, setRight] = useState<DrawnPick | null>(null);
   const [drawCounter, setDrawCounter] = useState(0);
+  const [records, setRecords] = useState<MatchRecord[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(RECORD_STORAGE_KEY);
+      if (stored) setRecords(JSON.parse(stored) as MatchRecord[]);
+    } catch {
+      setRecords([]);
+    }
+  }, []);
 
   const maps = useMemo(() => unique(PRO_PICKS.map((pick) => pick.map)), []);
   const events = useMemo(() => unique(PRO_PICKS.map((pick) => pick.event)), []);
@@ -66,6 +86,29 @@ export function ProPickPicker() {
     setDrawCounter(nextDrawId);
     setLeft(first);
     setRight(second);
+  }
+
+  function recordMatch(outcome: MatchOutcome) {
+    if (!left) return;
+
+    const nextRecords = [
+      {
+        id: `${Date.now()}-${left.id}-${right?.id ?? "single"}`,
+        recordedAt: new Date().toISOString(),
+        outcome,
+        left: stripDrawId(left),
+        right: right ? stripDrawId(right) : null,
+      },
+      ...records,
+    ].slice(0, MAX_RECORDS);
+
+    setRecords(nextRecords);
+    window.localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(nextRecords));
+  }
+
+  function clearRecords() {
+    setRecords([]);
+    window.localStorage.removeItem(RECORD_STORAGE_KEY);
   }
 
   function filterPicks(filters: PickFilters) {
@@ -152,6 +195,8 @@ export function ProPickPicker() {
         <PickResult key={left?.drawId ?? "left-empty"} label="Team A" pick={left} agentByName={agentByName} />
         <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
       </div>
+
+      <MatchHistory records={records} canRecord={Boolean(left)} hasRight={Boolean(right)} onRecord={recordMatch} onClear={clearRecords} />
     </section>
   );
 }
@@ -289,6 +334,70 @@ function PickResult({
   );
 }
 
+function MatchHistory({
+  records,
+  canRecord,
+  hasRight,
+  onRecord,
+  onClear,
+}: {
+  records: MatchRecord[];
+  canRecord: boolean;
+  hasRight: boolean;
+  onRecord: (outcome: MatchOutcome) => void;
+  onClear: () => void;
+}) {
+  const t = useTranslations();
+  const recentRecords = records.slice(0, 5);
+
+  return (
+    <section className="border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+            {t("proPick.historyHeading")}
+          </h3>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">
+            {t("proPick.historyCount", { count: records.length })}
+          </p>
+        </div>
+        {records.length > 0 ? (
+          <button
+            type="button"
+            onClick={onClear}
+            className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            {t("proPick.historyClear")}
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <button type="button" disabled={!canRecord} onClick={() => onRecord("left")} className="min-h-10 border border-[var(--color-line)] px-3 py-2 text-sm font-semibold text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-45">
+          {t("proPick.recordTeamA")}
+        </button>
+        <button type="button" disabled={!canRecord || !hasRight} onClick={() => onRecord("right")} className="min-h-10 border border-[var(--color-line)] px-3 py-2 text-sm font-semibold text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-45">
+          {t("proPick.recordTeamB")}
+        </button>
+        <button type="button" disabled={!canRecord} onClick={() => onRecord("draw")} className="min-h-10 border border-[var(--color-line)] px-3 py-2 text-sm font-semibold text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-45">
+          {t("proPick.recordDraw")}
+        </button>
+      </div>
+      {recentRecords.length > 0 ? (
+        <div className="mt-4 grid gap-2">
+          {recentRecords.map((record) => (
+            <div key={record.id} className="border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2 text-xs text-[var(--color-muted)]">
+              <span className="font-semibold text-[var(--color-ink)]">{getOutcomeLabel(record, t)}</span>
+              <span> / {record.left.team}</span>
+              {record.right ? <span> vs {record.right.team}</span> : null}
+              <span> / {record.left.map}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function ProPickAgentTile({ agent }: { agent: Agent }) {
   const t = useTranslations();
   const { accent } = ROLE_META[agent.role];
@@ -320,10 +429,20 @@ function withDrawId(proPick: ProPick, drawId: number): DrawnPick {
   return { ...proPick, drawId };
 }
 
+function stripDrawId({ drawId: _drawId, ...pick }: DrawnPick): ProPick {
+  return pick;
+}
+
 function getOpponentLabel(proPick: ProPick) {
   const teams = proPick.match.split(" vs ");
   const opponent = teams.find((team) => team !== proPick.team);
   return opponent ? `vs ${opponent}` : proPick.match;
+}
+
+function getOutcomeLabel(record: MatchRecord, t: ReturnType<typeof useTranslations>) {
+  if (record.outcome === "draw") return t("proPick.outcomeDraw");
+  if (record.outcome === "left") return t("proPick.outcomeWinner", { team: record.left.team });
+  return t("proPick.outcomeWinner", { team: record.right?.team ?? "Team B" });
 }
 
 function pickOne<T>(items: T[]): T {
