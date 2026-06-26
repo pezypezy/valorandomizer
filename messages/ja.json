@@ -59,7 +59,8 @@
     "mirror": "Mirror",
     "pick": "Pick",
     "noPick": "未選択",
-    "source": "Source"
+    "source": "Source",
+    "detail": "DETAIL"
   },
   "locale": {
     "ja": "日本語",
