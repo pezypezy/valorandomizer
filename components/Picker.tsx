@@ -15,6 +15,7 @@ import {
 } from "@/lib/picker";
 import { RoleStepper } from "./RoleStepper";
 import { AgentCard } from "./AgentCard";
+import { ProPickPicker } from "./ProPickPicker";
 import { Button } from "./ui/Button";
 
 /** Random composition of TEAM_SIZE across the four roles (respecting pools). */
@@ -202,6 +203,8 @@ export function Picker() {
           </div>
         )}
       </section>
+
+      <ProPickPicker />
     </div>
   );
 }
