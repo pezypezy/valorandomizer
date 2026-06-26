@@ -4,6 +4,15 @@
     "tagline": "チーム・ランダム・ピッカー",
     "subtitle": "ロール構成を決めて、5人のエージェントをランダムに招集せよ。"
   },
+  "mode": {
+    "back": "戻る",
+    "randomTitle": "Random Pick",
+    "randomDescription": "選んだロール構成からチームを作り、必要に応じて個別に振り直します。",
+    "randomMeta": "Role based",
+    "proTitle": "Pro Pick",
+    "proDescription": "過去のプロチームのピックから抽選し、カスタムゲーム用の条件として使います。",
+    "proMeta": "Match based"
+  },
   "roles": {
     "Duelist": "デュエリスト",
     "Initiator": "イニシエーター",
