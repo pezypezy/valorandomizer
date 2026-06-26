@@ -24,6 +24,10 @@ type PickFilters = {
   region: string;
   team: string;
 };
+type DrawDataEntry = {
+  side: "A" | "B";
+  pick: ProPick;
+};
 
 const ALL = "all";
 const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, region: ALL, team: ALL };
@@ -39,6 +43,7 @@ export function ProPickPicker() {
   const [right, setRight] = useState<DrawnPick | null>(null);
   const [drawCounter, setDrawCounter] = useState(0);
   const [records, setRecords] = useState<MatchRecord[]>([]);
+  const [showDataList, setShowDataList] = useState(false);
 
   useEffect(() => {
     try {
@@ -60,6 +65,15 @@ export function ProPickPicker() {
 
   const leftCandidates = useMemo(() => filterPicks(leftFilters), [leftFilters]);
   const rightCandidates = useMemo(() => filterPicks(rightFilters), [rightFilters]);
+  const drawDataEntries = useMemo(() => {
+    if (sideMode !== "both") return leftCandidates.map((pick) => ({ side: "A" as const, pick }));
+
+    return [
+      ...leftCandidates.map((pick) => ({ side: "A" as const, pick })),
+      ...rightCandidates.map((pick) => ({ side: "B" as const, pick })),
+    ];
+  }, [leftCandidates, rightCandidates, sideMode]);
+  const drawDataCount = useMemo(() => new Set(drawDataEntries.map((entry) => entry.pick.id)).size, [drawDataEntries]);
 
   const canPick = leftCandidates.length > 0 && (sideMode !== "both" || rightCandidates.length > 0);
 
@@ -130,7 +144,7 @@ export function ProPickPicker() {
 
   return (
     <section className="relative left-1/2 flex w-[calc(100vw-2rem)] max-w-[112rem] -translate-x-1/2 flex-col gap-6 sm:w-[calc(100vw-3rem)]">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
             {t("proPick.heading")}
@@ -139,9 +153,19 @@ export function ProPickPicker() {
             {t("proPick.subtitle")}
           </p>
         </div>
-        <span className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-          A {leftCandidates.length} / B {sideMode === "both" ? rightCandidates.length : "-"}
-        </span>
+        <div className="relative flex flex-wrap justify-end gap-2">
+          <span className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+            A {leftCandidates.length} / B {sideMode === "both" ? rightCandidates.length : "-"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowDataList((value) => !value)}
+            className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+          >
+            {t("proPick.dataCounter", { count: drawDataCount, total: PRO_PICKS.length })}
+          </button>
+          {showDataList ? <DrawDataList entries={drawDataEntries} onClose={() => setShowDataList(false)} /> : null}
+        </div>
       </div>
 
       <div className="mx-auto grid w-full max-w-md gap-3 sm:grid-cols-[minmax(12rem,1fr)_minmax(9rem,auto)]">
@@ -198,6 +222,54 @@ export function ProPickPicker() {
 
       <MatchHistory records={records} canRecord={Boolean(left)} hasRight={Boolean(right)} onRecord={recordMatch} onClear={clearRecords} />
     </section>
+  );
+}
+
+function DrawDataList({ entries, onClose }: { entries: DrawDataEntry[]; onClose: () => void }) {
+  const t = useTranslations();
+
+  return (
+    <div className="absolute right-0 top-full z-30 mt-2 w-[min(calc(100vw-2rem),42rem)] border border-[var(--color-line)] bg-[var(--color-bg-deep)] p-3 shadow-2xl">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+            {t("proPick.dataListHeading")}
+          </h3>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
+            {t("proPick.dataListCount", { count: entries.length })}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+        >
+          {t("proPick.dataListClose")}
+        </button>
+      </div>
+      {entries.length > 0 ? (
+        <div className="max-h-96 overflow-y-auto pr-1">
+          <div className="grid gap-2">
+            {entries.map((entry, index) => (
+              <div key={`${entry.side}-${entry.pick.id}-${index}`} className="border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2 text-left">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
+                  <span className="font-semibold text-[var(--color-primary)]">{entry.side === "A" ? "Team A" : "Team B"}</span>
+                  <span>{entry.pick.region}</span>
+                  <span>{entry.pick.map}</span>
+                </div>
+                <p className="mt-1 break-words font-display text-sm font-bold text-[var(--color-ink)]">{entry.pick.team}</p>
+                <p className="mt-1 break-words text-xs text-[var(--color-muted)]">{entry.pick.event}</p>
+                <p className="mt-1 break-words text-xs text-[var(--color-muted)]">{entry.pick.agents.join(" / ")}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="border border-dashed border-[var(--color-line)] px-3 py-8 text-center text-sm text-[var(--color-muted)]">
+          {t("proPick.dataListEmpty")}
+        </p>
+      )}
+    </div>
   );
 }
 
