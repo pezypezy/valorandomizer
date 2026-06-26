@@ -23,7 +23,7 @@
   },
   "actions": {
     "randomize": "招集する",
-    "rolling": "招集中…",
+    "rolling": "招集中...",
     "rollAgain": "もう一度",
     "mustTotal": "合計を {size} にしてください",
     "reroll": "振り直す",
@@ -35,6 +35,22 @@
   "result": {
     "heading": "招集されたチーム",
     "empty": "ロール構成を決めて「招集する」を押してください。"
+  },
+  "proPick": {
+    "heading": "Pro Pick Draft",
+    "subtitle": "過去のプロチームのピックからカスタム用のチームを抽選します。",
+    "count": "{count} picks",
+    "all": "All",
+    "map": "Map",
+    "event": "Event",
+    "team": "Team",
+    "mode": "Mode",
+    "both": "2 teams",
+    "single": "1 team",
+    "mirror": "Mirror",
+    "pick": "Pick",
+    "noPick": "未選択",
+    "source": "Source"
   },
   "locale": {
     "ja": "日本語",
