@@ -4,6 +4,15 @@
     "tagline": "팀 랜덤 피커",
     "subtitle": "롤 구성을 정하고 5명의 요원을 랜덤으로 소집하세요."
   },
+  "mode": {
+    "back": "뒤로",
+    "randomTitle": "Random Pick",
+    "randomDescription": "선택한 역할 구성으로 팀을 만들고 필요한 요원을 개별로 다시 뽑습니다.",
+    "randomMeta": "Role based",
+    "proTitle": "Pro Pick",
+    "proDescription": "과거 프로 팀의 픽에서 추첨해 커스텀 게임 조건으로 사용합니다.",
+    "proMeta": "Match based"
+  },
   "roles": {
     "Duelist": "타격대",
     "Initiator": "척후대",
