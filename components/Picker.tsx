@@ -125,7 +125,6 @@ export function Picker() {
                   </p>
                 </section>
 
-                {/* Role configuration */}
                 <section className="flex flex-col gap-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
@@ -162,7 +161,6 @@ export function Picker() {
                     ))}
                   </div>
 
-                  {/* Total + action */}
                   <div className="mt-2 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
                     <div className="flex items-baseline gap-2">
                       <span className="text-xs uppercase tracking-wider text-[var(--color-muted)]">
@@ -184,7 +182,6 @@ export function Picker() {
                   </div>
                 </section>
 
-                {/* Result */}
                 <section className="flex flex-col gap-4">
                   <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
                     {t("result.heading")}
@@ -242,79 +239,75 @@ function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      exit={{ opacity: 0, y: -18, filter: "blur(8px)" }}
+      initial={{ opacity: 0, filter: "blur(8px)" }}
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, filter: "blur(8px)" }}
       transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-      className="flex min-h-[62vh] flex-col justify-center gap-8"
+      className="-mx-4 -mt-2 grid min-h-[calc(100vh-7rem)] overflow-hidden border border-[var(--color-line)] sm:-mx-6 md:grid-cols-2"
     >
-      <div className="text-center">
-        <p className="font-display text-sm font-bold uppercase tracking-[0.3em] text-[var(--color-primary)]">
-          {t("mode.eyebrow")}
-        </p>
-        <h1 className="mt-3 font-display text-4xl font-bold tracking-wide text-[var(--color-ink)] sm:text-5xl">
-          {t("mode.heading")}
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--color-muted)]">
-          {t("mode.subtitle")}
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <ModeCard
-          title={t("mode.randomTitle")}
-          description={t("mode.randomDescription")}
-          meta={t("mode.randomMeta")}
-          accent="var(--color-primary)"
-          onClick={() => onSelect("random")}
-        />
-        <ModeCard
-          title={t("mode.proTitle")}
-          description={t("mode.proDescription")}
-          meta={t("mode.proMeta")}
-          accent="var(--color-sentinel)"
-          onClick={() => onSelect("pro")}
-        />
-      </div>
+      <SplitChoice
+        title={t("mode.randomTitle")}
+        description={t("mode.randomDescription")}
+        meta={t("mode.randomMeta")}
+        accent="var(--color-primary)"
+        direction="left"
+        onClick={() => onSelect("random")}
+      />
+      <SplitChoice
+        title={t("mode.proTitle")}
+        description={t("mode.proDescription")}
+        meta={t("mode.proMeta")}
+        accent="var(--color-sentinel)"
+        direction="right"
+        onClick={() => onSelect("pro")}
+      />
     </motion.section>
   );
 }
 
-function ModeCard({
+function SplitChoice({
   title,
   description,
   meta,
   accent,
+  direction,
   onClick,
 }: {
   title: string;
   description: string;
   meta: string;
   accent: string;
+  direction: "left" | "right";
   onClick: () => void;
 }) {
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      whileHover={{ y: -6, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
-      className="clip-frame group relative min-h-64 overflow-hidden border border-[var(--color-line)] bg-[var(--color-surface)] p-5 text-left transition-colors hover:bg-[var(--color-surface-2)]"
-      style={{ boxShadow: `0 0 0 1px ${accent}` }}
+      initial={{ opacity: 0, x: direction === "left" ? -36 : 36 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ scale: 1.015 }}
+      whileTap={{ scale: 0.99 }}
+      className="group relative flex min-h-[44vh] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] p-6 text-left transition-colors hover:bg-[var(--color-surface-2)] md:min-h-full md:border-b-0 md:border-r last:md:border-r-0"
     >
       <div
-        className="absolute inset-x-0 top-0 h-1"
-        style={{ background: accent }}
+        className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `linear-gradient(135deg, ${accent}, transparent 38%)` }}
       />
-      <div className="flex h-full flex-col justify-between gap-8">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+      <div
+        className="absolute inset-x-0 top-0 h-1 md:inset-y-0 md:inset-x-auto md:h-auto md:w-1"
+        style={{ background: accent, [direction === "left" ? "right" : "left"]: 0 }}
+      />
+      <div className="relative flex w-full flex-col justify-between gap-10 self-stretch">
+        <div className="max-w-xl">
+          <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-muted)]">
             {meta}
           </p>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-wide text-[var(--color-ink)]">
+          <h1 className="mt-5 font-display text-5xl font-bold tracking-wide text-[var(--color-ink)] sm:text-6xl">
             {title}
-          </h2>
-          <p className="mt-3 max-w-md text-sm leading-6 text-[var(--color-muted)]">
+          </h1>
+          <p className="mt-5 text-base leading-7 text-[var(--color-muted)]">
             {description}
           </p>
         </div>
@@ -323,7 +316,7 @@ function ModeCard({
             Select
           </span>
           <span
-            className="flex h-10 w-10 items-center justify-center border border-[var(--color-line)] text-lg transition-transform group-hover:translate-x-1"
+            className="flex h-12 w-12 items-center justify-center border border-[var(--color-line)] text-2xl transition-transform group-hover:translate-x-1"
             style={{ color: accent }}
             aria-hidden="true"
           >
