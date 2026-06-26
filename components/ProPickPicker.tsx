@@ -101,7 +101,25 @@ export function ProPickPicker() {
         </span>
       </div>
 
-      <div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(8rem,auto)]">
+      <div className="mx-auto grid w-full max-w-md gap-3 sm:grid-cols-[minmax(12rem,1fr)_minmax(9rem,auto)]">
+        <Select
+          label={t("proPick.mode")}
+          value={sideMode}
+          values={["both", "single", "mirror"]}
+          labels={{ both: t("proPick.both"), single: t("proPick.single"), mirror: t("proPick.mirror") }}
+          onChange={(value) => setSideMode(value as SideMode)}
+        />
+        <Button
+          type="button"
+          onClick={draw}
+          disabled={!canPick}
+          className="min-h-12 w-full px-6 py-3 text-base sm:self-end"
+        >
+          {t("proPick.pick")}
+        </Button>
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-2">
         <FilterPanel
           title="Team A"
           filters={leftFilters}
@@ -122,32 +140,17 @@ export function ProPickPicker() {
           disabledText={sideMode === "mirror" ? t("proPick.mirror") : t("proPick.single")}
           onChange={(key, value) => updateFilters("right", key, value)}
         />
-        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(10rem,1fr)_minmax(8rem,auto)] 2xl:flex 2xl:flex-col 2xl:self-end">
-          <Select
-            label={t("proPick.mode")}
-            value={sideMode}
-            values={["both", "single", "mirror"]}
-            labels={{ both: t("proPick.both"), single: t("proPick.single"), mirror: t("proPick.mirror") }}
-            onChange={(value) => setSideMode(value as SideMode)}
-          />
-          <Button
-            type="button"
-            onClick={draw}
-            disabled={!canPick}
-            className="min-h-12 w-full px-5 py-3 text-base sm:self-end"
-          >
-            {t("proPick.pick")}
-          </Button>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-3 font-display text-2xl font-bold text-[var(--color-primary)]">
+          VS
         </div>
       </div>
 
-      <div className="relative grid gap-4 pt-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+      <div className="grid gap-3 xl:grid-cols-2">
         <PickResult key={left?.drawId ?? "left-empty"} label="Team A" pick={left} agentByName={agentByName} />
         <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
-        <div className="hidden lg:block lg:min-w-36" aria-hidden="true" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-6 font-display text-2xl font-bold text-[var(--color-primary)] lg:block">
-          VS
-        </div>
       </div>
     </section>
   );
@@ -254,7 +257,7 @@ function PickResult({
     .filter((agent): agent is Agent => Boolean(agent));
 
   return (
-    <article className="clip-frame border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+    <article className="clip-frame min-w-0 border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">{label}</p>
