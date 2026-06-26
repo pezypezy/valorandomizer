@@ -1,5 +1,65 @@
 [
   {
+    "id": "masters-santiago-2026-ns-corrode-gf",
+    "event": "Masters Santiago 2026",
+    "match": "Nongshim RedForce vs Paper Rex",
+    "map": "Corrode",
+    "region": "Pacific",
+    "team": "Nongshim RedForce",
+    "agents": ["Fade", "Viper", "Omen", "Neon", "Yoru"],
+    "source": "https://www.vlr.gg/626544/nongshim-redforce-vs-paper-rex-valorant-masters-santiago-2026-gf"
+  },
+  {
+    "id": "masters-santiago-2026-prx-corrode-gf",
+    "event": "Masters Santiago 2026",
+    "match": "Nongshim RedForce vs Paper Rex",
+    "map": "Corrode",
+    "region": "Pacific",
+    "team": "Paper Rex",
+    "agents": ["Omen", "Waylay", "Vyse", "Viper", "Fade"],
+    "source": "https://www.vlr.gg/626544/nongshim-redforce-vs-paper-rex-valorant-masters-santiago-2026-gf"
+  },
+  {
+    "id": "masters-santiago-2026-ns-split-gf",
+    "event": "Masters Santiago 2026",
+    "match": "Nongshim RedForce vs Paper Rex",
+    "map": "Split",
+    "region": "Pacific",
+    "team": "Nongshim RedForce",
+    "agents": ["Viper", "Fade", "Yoru", "Neon", "Omen"],
+    "source": "https://www.vlr.gg/626544/nongshim-redforce-vs-paper-rex-valorant-masters-santiago-2026-gf"
+  },
+  {
+    "id": "masters-santiago-2026-prx-split-gf",
+    "event": "Masters Santiago 2026",
+    "match": "Nongshim RedForce vs Paper Rex",
+    "map": "Split",
+    "region": "Pacific",
+    "team": "Paper Rex",
+    "agents": ["Omen", "Fade", "Viper", "Raze", "Yoru"],
+    "source": "https://www.vlr.gg/626544/nongshim-redforce-vs-paper-rex-valorant-masters-santiago-2026-gf"
+  },
+  {
+    "id": "masters-santiago-2026-ns-abyss-gf",
+    "event": "Masters Santiago 2026",
+    "match": "Nongshim RedForce vs Paper Rex",
+    "map": "Abyss",
+    "region": "Pacific",
+    "team": "Nongshim RedForce",
+    "agents": ["Sova", "Yoru", "Waylay", "Cypher", "Omen"],
+    "source": "https://www.vlr.gg/626544/nongshim-redforce-vs-paper-rex-valorant-masters-santiago-2026-gf"
+  },
+  {
+    "id": "masters-santiago-2026-prx-abyss-gf",
+    "event": "Masters Santiago 2026",
+    "match": "Nongshim RedForce vs Paper Rex",
+    "map": "Abyss",
+    "region": "Pacific",
+    "team": "Paper Rex",
+    "agents": ["Vyse", "Omen", "Yoru", "Sova", "Waylay"],
+    "source": "https://www.vlr.gg/626544/nongshim-redforce-vs-paper-rex-valorant-masters-santiago-2026-gf"
+  },
+  {
     "id": "champions-2024-edg-haven-gf",
     "event": "VALORANT Champions 2024",
     "match": "Edward Gaming vs Team Heretics",
