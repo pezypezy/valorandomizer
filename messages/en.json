@@ -61,7 +61,15 @@
     "pick": "Pick",
     "noPick": "No pick",
     "source": "Source",
-    "detail": "DETAIL"
+    "detail": "DETAIL",
+    "historyHeading": "Match Records",
+    "historyCount": "{count} records",
+    "historyClear": "Clear",
+    "recordTeamA": "Team A win",
+    "recordTeamB": "Team B win",
+    "recordDraw": "Draw",
+    "outcomeWinner": "{team} win",
+    "outcomeDraw": "Draw"
   },
   "locale": {
     "ja": "日本語",
