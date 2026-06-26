@@ -136,12 +136,13 @@ export function ProPickPicker() {
         </div>
       </div>
 
-      <div className="grid gap-4 pt-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+      <div className="relative grid gap-4 pt-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
         <PickResult key={left?.drawId ?? "left-empty"} label="Team A" pick={left} agentByName={agentByName} />
-        <div className="hidden min-h-16 items-center justify-center border border-[var(--color-line)] bg-[var(--color-surface)] px-4 font-display text-2xl font-bold text-[var(--color-primary)] lg:flex">
+        <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
+        <div className="hidden lg:block lg:min-w-36" aria-hidden="true" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-6 font-display text-2xl font-bold text-[var(--color-primary)] lg:block">
           VS
         </div>
-        <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
       </div>
     </section>
   );
