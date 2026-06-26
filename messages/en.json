@@ -23,7 +23,7 @@
   },
   "actions": {
     "randomize": "Summon",
-    "rolling": "Summoning…",
+    "rolling": "Summoning...",
     "rollAgain": "Roll Again",
     "mustTotal": "Counts must total {size}",
     "reroll": "Reroll",
@@ -35,6 +35,22 @@
   "result": {
     "heading": "Your Squad",
     "empty": "Set your role composition and hit Summon."
+  },
+  "proPick": {
+    "heading": "Pro Pick Draft",
+    "subtitle": "Pick a past pro team setup for custom games.",
+    "count": "{count} picks",
+    "all": "All",
+    "map": "Map",
+    "event": "Event",
+    "team": "Team",
+    "mode": "Mode",
+    "both": "2 teams",
+    "single": "1 team",
+    "mirror": "Mirror",
+    "pick": "Pick",
+    "noPick": "No pick",
+    "source": "Source"
   },
   "locale": {
     "ja": "日本語",
