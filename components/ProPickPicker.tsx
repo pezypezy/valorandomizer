@@ -86,7 +86,7 @@ export function ProPickPicker() {
   }
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="relative left-1/2 flex w-[calc(100vw-2rem)] max-w-[112rem] -translate-x-1/2 flex-col gap-6 sm:w-[calc(100vw-3rem)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
@@ -101,7 +101,7 @@ export function ProPickPicker() {
         </span>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(7.5rem,auto)]">
+      <div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(8rem,auto)]">
         <FilterPanel
           title="Team A"
           filters={leftFilters}
@@ -122,7 +122,7 @@ export function ProPickPicker() {
           disabledText={sideMode === "mirror" ? t("proPick.mirror") : t("proPick.single")}
           onChange={(key, value) => updateFilters("right", key, value)}
         />
-        <div className="flex min-w-0 flex-col gap-3 lg:self-end">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(10rem,1fr)_minmax(8rem,auto)] 2xl:flex 2xl:flex-col 2xl:self-end">
           <Select
             label={t("proPick.mode")}
             value={sideMode}
@@ -134,7 +134,7 @@ export function ProPickPicker() {
             type="button"
             onClick={draw}
             disabled={!canPick}
-            className="min-h-12 w-full px-5 py-3 text-base"
+            className="min-h-12 w-full px-5 py-3 text-base sm:self-end"
           >
             {t("proPick.pick")}
           </Button>
@@ -184,7 +184,7 @@ function FilterPanel({
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">{disabledText}</span>
         ) : null}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(7rem,0.8fr)_minmax(13rem,1.25fr)_minmax(8.5rem,0.9fr)_minmax(13rem,1.25fr)]">
         <Select label={t("proPick.map")} value={filters.map} values={[ALL, ...maps]} onChange={(value) => onChange("map", value)} allLabel={t("proPick.all")} disabled={disabled} />
         <Select label={t("proPick.event")} value={filters.event} values={[ALL, ...events]} onChange={(value) => onChange("event", value)} allLabel={t("proPick.all")} disabled={disabled} />
         <Select label={t("proPick.region")} value={filters.region} values={[ALL, ...regions]} onChange={(value) => onChange("region", value)} allLabel={t("proPick.all")} disabled={disabled} />
@@ -218,7 +218,7 @@ function Select({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-10 w-full border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-2 text-sm text-[var(--color-ink)] outline-none disabled:cursor-not-allowed disabled:opacity-45"
+        className="min-h-10 w-full truncate border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-2 text-sm text-[var(--color-ink)] outline-none disabled:cursor-not-allowed disabled:opacity-45"
       >
         {values.map((item) => (
           <option key={item} value={item}>
