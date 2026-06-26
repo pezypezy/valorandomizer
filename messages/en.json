@@ -4,6 +4,15 @@
     "tagline": "TEAM RANDOM PICKER",
     "subtitle": "Set your role composition and summon five agents at random."
   },
+  "mode": {
+    "back": "Back",
+    "randomTitle": "Random Pick",
+    "randomDescription": "Build a squad from your selected role composition and reroll individual agents as needed.",
+    "randomMeta": "Role based",
+    "proTitle": "Pro Pick",
+    "proDescription": "Draw from past pro team picks and use the result as a custom-game challenge.",
+    "proMeta": "Match based"
+  },
   "roles": {
     "Duelist": "Duelist",
     "Initiator": "Initiator",
