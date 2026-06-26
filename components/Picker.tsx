@@ -278,7 +278,7 @@ function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
       animate={{ opacity: 1, filter: "blur(0px)" }}
       exit={{ opacity: 0, filter: "blur(8px)" }}
       transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-      className="-mx-4 -mt-2 grid min-h-[calc(100vh-7rem)] overflow-hidden border border-[var(--color-line)] sm:-mx-6 md:grid-cols-2"
+      className="relative left-1/2 -mt-2 grid min-h-[calc(100vh-5.5rem)] w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:grid-cols-2"
     >
       <SplitChoice
         title="RANDOM PICK"
@@ -322,31 +322,31 @@ function SplitChoice({
       initial={{ opacity: 0, x: direction === "left" ? -36 : 36 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ scale: 1.015 }}
+      whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className="group relative flex min-h-[44vh] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] p-6 text-left transition-colors hover:bg-[var(--color-surface-2)] md:min-h-full md:border-b-0 md:border-r last:md:border-r-0"
+      className="group relative flex min-h-[48vh] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-8 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] sm:px-12 md:min-h-full md:border-b-0 md:border-r md:px-14 lg:px-20 last:md:border-r-0"
     >
       <div
         className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: `linear-gradient(135deg, ${accent}, transparent 38%)` }}
+        style={{ background: `linear-gradient(135deg, ${accent}, transparent 34%)` }}
       />
       <div
         className="absolute inset-x-0 top-0 h-1 md:inset-y-0 md:inset-x-auto md:h-auto md:w-1"
         style={{ background: accent, [direction === "left" ? "right" : "left"]: 0 }}
       />
       <div className="relative flex w-full flex-col justify-between gap-10 self-stretch">
-        <div className="max-w-xl">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-muted)]">
+        <div className="max-w-2xl pt-[8vh] md:pt-[10vh]">
+          <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-muted)] sm:text-sm">
             {meta}
           </p>
-          <h1 className="mt-5 font-display text-5xl font-bold tracking-wide text-[var(--color-ink)] sm:text-6xl">
+          <h1 className="mt-5 font-display text-[clamp(3.5rem,5.6vw,7rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">
             {title}
           </h1>
-          <p className="mt-5 text-base leading-7 text-[var(--color-muted)]">
+          <p className="mt-6 max-w-xl text-sm leading-7 text-[var(--color-muted)] sm:text-base">
             {description}
           </p>
         </div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 pb-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
             Select
           </span>
