@@ -52,6 +52,7 @@
     "all": "All",
     "map": "Map",
     "event": "Event",
+    "region": "Region",
     "team": "Team",
     "mode": "Mode",
     "both": "2 teams",
