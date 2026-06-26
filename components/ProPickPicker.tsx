@@ -282,13 +282,13 @@ function ProPickAgentTile({ agent }: { agent: Agent }) {
 
   return (
     <div className="clip-card min-w-0 overflow-hidden border border-[var(--color-line)] bg-[var(--color-surface-2)]">
-      <div className="relative aspect-[4/5] w-full overflow-hidden" style={{ background: `linear-gradient(160deg, ${c0}, ${c1})` }}>
+      <div className="relative aspect-[1/1] w-full overflow-hidden" style={{ background: `linear-gradient(160deg, ${c0}, ${c1})` }}>
         <Image
           src={agent.portrait}
           alt={agent.name}
           fill
           sizes="(max-width: 640px) 50vw, 140px"
-          className="translate-y-[18%] scale-[1.7] object-contain object-bottom p-1"
+          className="translate-y-[27%] scale-[2.35] object-contain object-bottom"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-deep)] via-transparent to-transparent" />
       </div>
