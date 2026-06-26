@@ -261,9 +261,9 @@ function PickResult({
             href={pick.source}
             target="_blank"
             rel="noreferrer"
-            className="w-fit border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+            className="w-fit border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
           >
-            {t("proPick.source")}
+            {t("proPick.detail")}
           </a>
         ) : null}
       </div>
