@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { AGENTS } from "@/lib/agents";
@@ -19,6 +19,17 @@ import { ProPickPicker } from "./ProPickPicker";
 import { Button } from "./ui/Button";
 
 type PickerMode = "random" | "pro";
+
+const MODE_HASH: Record<PickerMode, string> = {
+  random: "#random-pick",
+  pro: "#pro-pick",
+};
+
+function modeFromHash(hash: string): PickerMode | null {
+  if (hash === MODE_HASH.random) return "random";
+  if (hash === MODE_HASH.pro) return "pro";
+  return null;
+}
 
 /** Random composition of TEAM_SIZE across the four roles (respecting pools). */
 function randomCounts(available: RoleCounts): RoleCounts {
@@ -43,6 +54,30 @@ export function Picker() {
 
   const total = totalCount(counts);
   const valid = validateCounts(AGENTS, counts).ok;
+
+  useEffect(() => {
+    const syncMode = () => setMode(modeFromHash(window.location.hash));
+    syncMode();
+    window.addEventListener("popstate", syncMode);
+    window.addEventListener("hashchange", syncMode);
+    return () => {
+      window.removeEventListener("popstate", syncMode);
+      window.removeEventListener("hashchange", syncMode);
+    };
+  }, []);
+
+  function chooseMode(nextMode: PickerMode) {
+    window.history.pushState(null, "", MODE_HASH[nextMode]);
+    setMode(nextMode);
+  }
+
+  function goBackToModeSelect() {
+    if (modeFromHash(window.location.hash)) {
+      window.history.back();
+      return;
+    }
+    setMode(null);
+  }
 
   function changeCount(role: Role, delta: number) {
     setCounts((prev) => {
@@ -98,7 +133,7 @@ export function Picker() {
     <div className="flex flex-col gap-10 pt-2">
       <AnimatePresence mode="wait">
         {!mode ? (
-          <ModeSelection key="mode-select" onSelect={setMode} />
+          <ModeSelection key="mode-select" onSelect={chooseMode} />
         ) : (
           <motion.div
             key={mode}
@@ -109,7 +144,7 @@ export function Picker() {
             className="flex flex-col gap-10"
           >
             <div className="flex justify-start">
-              <Button variant="ghost" onClick={() => setMode(null)} className="px-4">
+              <Button variant="ghost" onClick={goBackToModeSelect} className="px-4">
                 {t("mode.back")}
               </Button>
             </div>
@@ -246,7 +281,7 @@ function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
       className="-mx-4 -mt-2 grid min-h-[calc(100vh-7rem)] overflow-hidden border border-[var(--color-line)] sm:-mx-6 md:grid-cols-2"
     >
       <SplitChoice
-        title={t("mode.randomTitle")}
+        title="RANDOM PICK"
         description={t("mode.randomDescription")}
         meta={t("mode.randomMeta")}
         accent="var(--color-primary)"
@@ -254,7 +289,7 @@ function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
         onClick={() => onSelect("random")}
       />
       <SplitChoice
-        title={t("mode.proTitle")}
+        title="PRO PICK"
         description={t("mode.proDescription")}
         meta={t("mode.proMeta")}
         accent="var(--color-sentinel)"
