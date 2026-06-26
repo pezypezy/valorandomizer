@@ -10,14 +10,19 @@ import { Button } from "./ui/Button";
 
 type SideMode = "both" | "single" | "mirror";
 type DrawnPick = ProPick & { drawId: number };
+type PickFilters = {
+  map: string;
+  event: string;
+  team: string;
+};
 
 const ALL = "all";
+const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, team: ALL };
 
 export function ProPickPicker() {
   const t = useTranslations();
-  const [map, setMap] = useState(ALL);
-  const [event, setEvent] = useState(ALL);
-  const [team, setTeam] = useState(ALL);
+  const [leftFilters, setLeftFilters] = useState<PickFilters>(DEFAULT_FILTERS);
+  const [rightFilters, setRightFilters] = useState<PickFilters>(DEFAULT_FILTERS);
   const [sideMode, setSideMode] = useState<SideMode>("both");
   const [left, setLeft] = useState<DrawnPick | null>(null);
   const [right, setRight] = useState<DrawnPick | null>(null);
@@ -31,36 +36,50 @@ export function ProPickPicker() {
     return new Map(AGENTS.map((agent) => [agent.name, agent]));
   }, []);
 
-  const candidates = useMemo(() => {
-    return PRO_PICKS.filter((pick) => {
-      return (
-        (map === ALL || pick.map === map) &&
-        (event === ALL || pick.event === event) &&
-        (team === ALL || pick.team === team)
-      );
-    });
-  }, [event, map, team]);
+  const leftCandidates = useMemo(() => filterPicks(leftFilters), [leftFilters]);
+  const rightCandidates = useMemo(() => filterPicks(rightFilters), [rightFilters]);
+
+  const canPick = leftCandidates.length > 0 && (sideMode !== "both" || rightCandidates.length > 0);
 
   function draw() {
-    if (candidates.length === 0) {
+    if (!canPick) {
       setLeft(null);
       setRight(null);
       return;
     }
 
     const nextDrawId = drawCounter + 1;
-    const first = withDrawId(pickOne(candidates), nextDrawId);
-    let second: DrawnPick | null = withDrawId(pickOne(candidates), nextDrawId + 1000);
+    const first = withDrawId(pickOne(leftCandidates), nextDrawId);
+    let second: DrawnPick | null = null;
 
-    if (sideMode === "single") second = null;
-    if (sideMode === "mirror") second = withDrawId(first, nextDrawId + 1000);
-    if (sideMode === "both" && candidates.length > 1) {
-      while (second?.id === first.id) second = withDrawId(pickOne(candidates), nextDrawId + 1000);
+    if (sideMode === "mirror") {
+      second = withDrawId(first, nextDrawId + 1000);
+    } else if (sideMode === "both") {
+      second = withDrawId(pickOne(rightCandidates), nextDrawId + 1000);
+      if (rightCandidates.length > 1) {
+        while (second.id === first.id) second = withDrawId(pickOne(rightCandidates), nextDrawId + 1000);
+      }
     }
 
     setDrawCounter(nextDrawId);
     setLeft(first);
     setRight(second);
+  }
+
+  function filterPicks(filters: PickFilters) {
+    return PRO_PICKS.filter((pick) => {
+      return (
+        (filters.map === ALL || pick.map === filters.map) &&
+        (filters.event === ALL || pick.event === filters.event) &&
+        (filters.team === ALL || pick.team === filters.team)
+      );
+    });
+  }
+
+  function updateFilters(side: "left" | "right", key: keyof PickFilters, value: string) {
+    const updater = (filters: PickFilters) => ({ ...filters, [key]: value });
+    if (side === "left") setLeftFilters(updater);
+    else setRightFilters(updater);
   }
 
   return (
@@ -75,29 +94,46 @@ export function ProPickPicker() {
           </p>
         </div>
         <span className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-          {t("proPick.count", { count: candidates.length })}
+          A {leftCandidates.length} / B {sideMode === "both" ? rightCandidates.length : "-"}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
-        <Select label={t("proPick.map")} value={map} values={[ALL, ...maps]} onChange={setMap} allLabel={t("proPick.all")} />
-        <Select label={t("proPick.event")} value={event} values={[ALL, ...events]} onChange={setEvent} allLabel={t("proPick.all")} />
-        <Select label={t("proPick.team")} value={team} values={[ALL, ...teams]} onChange={setTeam} allLabel={t("proPick.all")} />
-        <Select
-          label={t("proPick.mode")}
-          value={sideMode}
-          values={["both", "single", "mirror"]}
-          labels={{ both: t("proPick.both"), single: t("proPick.single"), mirror: t("proPick.mirror") }}
-          onChange={(value) => setSideMode(value as SideMode)}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <FilterPanel
+          title="Team A"
+          filters={leftFilters}
+          maps={maps}
+          events={events}
+          teams={teams}
+          onChange={(key, value) => updateFilters("left", key, value)}
         />
-        <Button
-          type="button"
-          onClick={draw}
-          disabled={candidates.length === 0}
-          className="min-h-12 w-full px-8 py-3 text-base lg:w-auto lg:self-end"
-        >
-          {t("proPick.pick")}
-        </Button>
+        <FilterPanel
+          title="Team B"
+          filters={rightFilters}
+          maps={maps}
+          events={events}
+          teams={teams}
+          disabled={sideMode !== "both"}
+          disabledText={sideMode === "mirror" ? t("proPick.mirror") : t("proPick.single")}
+          onChange={(key, value) => updateFilters("right", key, value)}
+        />
+        <div className="flex flex-col gap-3 lg:min-w-36 lg:self-end">
+          <Select
+            label={t("proPick.mode")}
+            value={sideMode}
+            values={["both", "single", "mirror"]}
+            labels={{ both: t("proPick.both"), single: t("proPick.single"), mirror: t("proPick.mirror") }}
+            onChange={(value) => setSideMode(value as SideMode)}
+          />
+          <Button
+            type="button"
+            onClick={draw}
+            disabled={!canPick}
+            className="min-h-12 w-full px-8 py-3 text-base"
+          >
+            {t("proPick.pick")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 pt-2 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
@@ -111,12 +147,51 @@ export function ProPickPicker() {
   );
 }
 
+function FilterPanel({
+  title,
+  filters,
+  maps,
+  events,
+  teams,
+  disabled,
+  disabledText,
+  onChange,
+}: {
+  title: string;
+  filters: PickFilters;
+  maps: string[];
+  events: string[];
+  teams: string[];
+  disabled?: boolean;
+  disabledText?: string;
+  onChange: (key: keyof PickFilters, value: string) => void;
+}) {
+  const t = useTranslations();
+
+  return (
+    <div className="border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">{title}</h3>
+        {disabled && disabledText ? (
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">{disabledText}</span>
+        ) : null}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Select label={t("proPick.map")} value={filters.map} values={[ALL, ...maps]} onChange={(value) => onChange("map", value)} allLabel={t("proPick.all")} disabled={disabled} />
+        <Select label={t("proPick.event")} value={filters.event} values={[ALL, ...events]} onChange={(value) => onChange("event", value)} allLabel={t("proPick.all")} disabled={disabled} />
+        <Select label={t("proPick.team")} value={filters.team} values={[ALL, ...teams]} onChange={(value) => onChange("team", value)} allLabel={t("proPick.all")} disabled={disabled} />
+      </div>
+    </div>
+  );
+}
+
 function Select({
   label,
   value,
   values,
   labels,
   allLabel,
+  disabled,
   onChange,
 }: {
   label: string;
@@ -124,6 +199,7 @@ function Select({
   values: string[];
   labels?: Record<string, string>;
   allLabel?: string;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
@@ -131,8 +207,9 @@ function Select({
       <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">{label}</span>
       <select
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-11 w-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-ink)] outline-none"
+        className="min-h-11 w-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5 text-sm text-[var(--color-ink)] outline-none disabled:cursor-not-allowed disabled:opacity-45"
       >
         {values.map((item) => (
           <option key={item} value={item}>
@@ -205,13 +282,13 @@ function ProPickAgentTile({ agent }: { agent: Agent }) {
 
   return (
     <div className="clip-card min-w-0 overflow-hidden border border-[var(--color-line)] bg-[var(--color-surface-2)]">
-      <div className="relative aspect-[4/5] w-full" style={{ background: `linear-gradient(160deg, ${c0}, ${c1})` }}>
+      <div className="relative aspect-[4/5] w-full overflow-hidden" style={{ background: `linear-gradient(160deg, ${c0}, ${c1})` }}>
         <Image
           src={agent.portrait}
           alt={agent.name}
           fill
           sizes="(max-width: 640px) 50vw, 140px"
-          className="object-contain object-bottom p-1"
+          className="translate-y-[18%] scale-[1.7] object-contain object-bottom p-1"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-deep)] via-transparent to-transparent" />
       </div>
