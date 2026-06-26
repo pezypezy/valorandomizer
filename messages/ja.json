@@ -61,7 +61,15 @@
     "pick": "Pick",
     "noPick": "未選択",
     "source": "Source",
-    "detail": "DETAIL"
+    "detail": "DETAIL",
+    "historyHeading": "Match Records",
+    "historyCount": "記録数 {count}",
+    "historyClear": "Clear",
+    "recordTeamA": "Team A 勝利",
+    "recordTeamB": "Team B 勝利",
+    "recordDraw": "引き分け",
+    "outcomeWinner": "{team} 勝利",
+    "outcomeDraw": "引き分け"
   },
   "locale": {
     "ja": "日本語",
