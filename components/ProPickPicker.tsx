@@ -13,11 +13,12 @@ type DrawnPick = ProPick & { drawId: number };
 type PickFilters = {
   map: string;
   event: string;
+  region: string;
   team: string;
 };
 
 const ALL = "all";
-const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, team: ALL };
+const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, region: ALL, team: ALL };
 
 export function ProPickPicker() {
   const t = useTranslations();
@@ -30,6 +31,7 @@ export function ProPickPicker() {
 
   const maps = useMemo(() => unique(PRO_PICKS.map((pick) => pick.map)), []);
   const events = useMemo(() => unique(PRO_PICKS.map((pick) => pick.event)), []);
+  const regions = useMemo(() => unique(PRO_PICKS.map((pick) => pick.region)), []);
   const teams = useMemo(() => unique(PRO_PICKS.map((pick) => pick.team)), []);
 
   const agentByName = useMemo(() => {
@@ -71,6 +73,7 @@ export function ProPickPicker() {
       return (
         (filters.map === ALL || pick.map === filters.map) &&
         (filters.event === ALL || pick.event === filters.event) &&
+        (filters.region === ALL || pick.region === filters.region) &&
         (filters.team === ALL || pick.team === filters.team)
       );
     });
@@ -98,12 +101,13 @@ export function ProPickPicker() {
         </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+      <div className="grid gap-4 overflow-x-auto pb-1 lg:grid-cols-[minmax(46rem,1fr)_minmax(46rem,1fr)_minmax(9rem,auto)]">
         <FilterPanel
           title="Team A"
           filters={leftFilters}
           maps={maps}
           events={events}
+          regions={regions}
           teams={teams}
           onChange={(key, value) => updateFilters("left", key, value)}
         />
@@ -112,12 +116,13 @@ export function ProPickPicker() {
           filters={rightFilters}
           maps={maps}
           events={events}
+          regions={regions}
           teams={teams}
           disabled={sideMode !== "both"}
           disabledText={sideMode === "mirror" ? t("proPick.mirror") : t("proPick.single")}
           onChange={(key, value) => updateFilters("right", key, value)}
         />
-        <div className="flex flex-col gap-3 lg:min-w-36 lg:self-end">
+        <div className="flex min-w-36 flex-col gap-3 lg:self-end">
           <Select
             label={t("proPick.mode")}
             value={sideMode}
@@ -153,6 +158,7 @@ function FilterPanel({
   filters,
   maps,
   events,
+  regions,
   teams,
   disabled,
   disabledText,
@@ -162,6 +168,7 @@ function FilterPanel({
   filters: PickFilters;
   maps: string[];
   events: string[];
+  regions: string[];
   teams: string[];
   disabled?: boolean;
   disabledText?: string;
@@ -170,16 +177,17 @@ function FilterPanel({
   const t = useTranslations();
 
   return (
-    <div className="border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
+    <div className="min-w-[46rem] border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">{title}</h3>
         {disabled && disabledText ? (
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">{disabledText}</span>
         ) : null}
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(7rem,0.8fr)_minmax(10rem,1.2fr)_minmax(8rem,0.9fr)_minmax(10rem,1.1fr)]">
         <Select label={t("proPick.map")} value={filters.map} values={[ALL, ...maps]} onChange={(value) => onChange("map", value)} allLabel={t("proPick.all")} disabled={disabled} />
         <Select label={t("proPick.event")} value={filters.event} values={[ALL, ...events]} onChange={(value) => onChange("event", value)} allLabel={t("proPick.all")} disabled={disabled} />
+        <Select label={t("proPick.region")} value={filters.region} values={[ALL, ...regions]} onChange={(value) => onChange("region", value)} allLabel={t("proPick.all")} disabled={disabled} />
         <Select label={t("proPick.team")} value={filters.team} values={[ALL, ...teams]} onChange={(value) => onChange("team", value)} allLabel={t("proPick.all")} disabled={disabled} />
       </div>
     </div>
@@ -204,7 +212,7 @@ function Select({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <label className="flex min-w-0 flex-col gap-1.5">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">{label}</span>
       <select
         value={value}
@@ -254,7 +262,9 @@ function PickResult({
           <p className="mt-1 text-sm text-[var(--color-muted)]">
             {pick.map} / {pick.event}
           </p>
-          <p className="text-sm text-[var(--color-muted)]">{getOpponentLabel(pick)}</p>
+          <p className="text-sm text-[var(--color-muted)]">
+            {pick.region} / {getOpponentLabel(pick)}
+          </p>
         </div>
         {pick.source ? (
           <a
