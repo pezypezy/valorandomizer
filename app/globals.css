@@ -22,7 +22,7 @@
 
 /* Map next/font CSS variables onto Tailwind font tokens (inline = reference, not copy). */
 @theme inline {
-  --font-display: var(--font-hikomi);
+  --font-display: var(--font-noto);
   --font-sans: var(--font-noto);
 }
 
@@ -45,7 +45,7 @@ body {
 
 /* Display font helper — Hikomi for headings, falls back to body font. */
 .font-display {
-  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
   letter-spacing: 0.04em;
 }
 
