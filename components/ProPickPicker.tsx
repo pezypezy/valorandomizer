@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AGENTS } from "@/lib/agents";
 import { PRO_PICKS, type ProPick } from "@/lib/pro-picks";
@@ -42,17 +42,8 @@ export function ProPickPicker() {
   const [left, setLeft] = useState<DrawnPick | null>(null);
   const [right, setRight] = useState<DrawnPick | null>(null);
   const [drawCounter, setDrawCounter] = useState(0);
-  const [records, setRecords] = useState<MatchRecord[]>([]);
+  const [records, setRecords] = useState<MatchRecord[]>(readStoredRecords);
   const [showDataList, setShowDataList] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(RECORD_STORAGE_KEY);
-      if (stored) setRecords(JSON.parse(stored) as MatchRecord[]);
-    } catch {
-      setRecords([]);
-    }
-  }, []);
 
   const maps = useMemo(() => unique(PRO_PICKS.map((pick) => pick.map)), []);
   const events = useMemo(() => unique(PRO_PICKS.map((pick) => pick.event)), []);
@@ -501,7 +492,20 @@ function withDrawId(proPick: ProPick, drawId: number): DrawnPick {
   return { ...proPick, drawId };
 }
 
-function stripDrawId({ drawId: _drawId, ...pick }: DrawnPick): ProPick {
+function readStoredRecords(): MatchRecord[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = window.localStorage.getItem(RECORD_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as MatchRecord[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function stripDrawId(proPick: DrawnPick): ProPick {
+  const { drawId, ...pick } = proPick;
+  void drawId;
   return pick;
 }
 
