@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import type { ReactNode } from "react";
 import { Noto_Sans_JP } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
@@ -8,15 +8,6 @@ import { routing } from "@/i18n/routing";
 import { Backdrop } from "@/components/ui/Backdrop";
 import { SiteHeader } from "@/components/SiteHeader";
 import "../globals.css";
-
-const hikomi = localFont({
-  src: [
-    { path: "../../public/fonts/HikomiFontS-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../../public/fonts/HikomiFontS-Thin.ttf", weight: "200", style: "normal" },
-  ],
-  variable: "--font-hikomi",
-  display: "swap",
-});
 
 const noto = Noto_Sans_JP({
   weight: ["400", "500", "700"],
@@ -37,13 +28,16 @@ export function generateStaticParams() {
 export default async function LocaleLayout({
   children,
   params,
-}: LayoutProps<"/[locale]">) {
+}: {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${hikomi.variable} ${noto.variable}`}>
+    <html lang={locale} className={noto.variable}>
       <body className="relative min-h-full">
         <NextIntlClientProvider>
           <Backdrop />
