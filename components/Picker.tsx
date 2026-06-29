@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
+import { Link } from "@/i18n/navigation";
 import { AGENTS } from "@/lib/agents";
 import { ROLES, TEAM_SIZE, type Agent, type Role } from "@/lib/roles";
 import {
@@ -40,6 +41,14 @@ function randomCounts(available: RoleCounts): RoleCounts {
     counts[r]++;
   }
   return counts;
+}
+
+function pickReplacementAgent(team: Agent[], slot: number): Agent | null {
+  const target = team[slot];
+  const used = new Set(team.map((a) => a.id));
+  const pool = AGENTS.filter((a) => a.role === target.role && !used.has(a.id));
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export function Picker() {
@@ -108,10 +117,8 @@ export function Picker() {
   function rerollOne(slot: number) {
     if (!team) return;
     const target = team[slot];
-    const used = new Set(team.map((a) => a.id));
-    const pool = AGENTS.filter((a) => a.role === target.role && !used.has(a.id));
-    if (pool.length === 0) return;
-    const replacement = pool[Math.floor(Math.random() * pool.length)];
+    const replacement = pickReplacementAgent(team, slot);
+    if (!replacement) return;
     setTeam(team.map((a, i) => (i === slot ? replacement : a)));
     setLocked((prev) => {
       const n = new Set(prev);
@@ -296,6 +303,30 @@ function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
         direction="right"
         onClick={() => onSelect("pro")}
       />
+      <nav aria-label="Information" className="absolute inset-x-0 bottom-4 z-20 flex justify-center px-4">
+        <div className="flex flex-wrap items-center justify-center gap-2 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-bg)_86%,transparent)] px-3 py-2 backdrop-blur">
+          <Link
+            href="/team-builder"
+            className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            Team Builder
+          </Link>
+          <span className="h-4 w-px bg-[var(--color-line)]" aria-hidden="true" />
+          <Link
+            href="/about"
+            className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            About this tool
+          </Link>
+          <span className="h-4 w-px bg-[var(--color-line)]" aria-hidden="true" />
+          <Link
+            href="/privacy"
+            className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            Privacy policy
+          </Link>
+        </div>
+      </nav>
     </motion.section>
   );
 }
@@ -324,7 +355,7 @@ function SplitChoice({
       transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className="group relative flex min-h-[48vh] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-8 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] sm:px-12 md:min-h-full md:border-b-0 md:border-r md:px-14 lg:px-20 last:md:border-r-0"
+      className="group relative flex min-h-[48vh] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-8 pb-28 pt-10 text-left transition-colors hover:bg-[var(--color-surface-2)] sm:px-12 md:min-h-full md:border-b-0 md:border-r md:px-14 lg:px-20 last:md:border-r-0"
     >
       <div
         className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
