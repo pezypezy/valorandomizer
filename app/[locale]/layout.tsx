@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Backdrop } from "@/components/ui/Backdrop";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import "../globals.css";
 
 const hikomi = localFont({
@@ -26,8 +27,8 @@ const noto = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "Valorandomizer — Team Random Picker",
-  description: "Set your role composition and summon five Valorant agents at random.",
+  title: "Valorandomizer — VALORANT Team Randomizer",
+  description: "Create VALORANT custom-game team compositions with random role picks and past pro team setups.",
 };
 
 export function generateStaticParams() {
@@ -52,6 +53,7 @@ export default async function LocaleLayout({
             <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 sm:px-6">
               {children}
             </main>
+            <SiteFooter locale={locale} />
           </div>
         </NextIntlClientProvider>
       </body>
