@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AGENTS } from "@/lib/agents";
 import { PRO_PICKS, type ProPick } from "@/lib/pro-picks";
@@ -34,8 +34,54 @@ const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, region: ALL, team: 
 const RECORD_STORAGE_KEY = "valorandomizer.proPick.matchRecords";
 const MAX_RECORDS = 100;
 
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+}
+
+function readSafeParam(params: URLSearchParams, key: string, allowed: string[]) {
+  const value = params.get(key);
+  if (!value || !allowed.includes(value)) return ALL;
+  return value;
+}
+
+function readSideMode(params: URLSearchParams): SideMode {
+  const value = params.get("mode");
+  if (value === "single" || value === "mirror" || value === "both") return value;
+  return "both";
+}
+
+function buildFiltersFromParams(params: URLSearchParams, suffix: "" | "B", maps: string[], events: string[], regions: string[], teams: string[]): PickFilters {
+  return {
+    map: readSafeParam(params, `map${suffix}`, maps),
+    event: readSafeParam(params, `event${suffix}`, events),
+    region: readSafeParam(params, `region${suffix}`, regions),
+    team: readSafeParam(params, `team${suffix}`, teams),
+  };
+}
+
+function writeFilterParams(params: URLSearchParams, suffix: "" | "B", filters: PickFilters) {
+  for (const key of ["map", "event", "region", "team"] as const) {
+    const queryKey = `${key}${suffix}`;
+    if (filters[key] === ALL) params.delete(queryKey);
+    else params.set(queryKey, filters[key]);
+  }
+}
+
 export function ProPickPicker() {
   const t = useTranslations();
+  const hydratedParams = useRef(false);
   const [leftFilters, setLeftFilters] = useState<PickFilters>(DEFAULT_FILTERS);
   const [rightFilters, setRightFilters] = useState<PickFilters>(DEFAULT_FILTERS);
   const [sideMode, setSideMode] = useState<SideMode>("both");
@@ -44,6 +90,7 @@ export function ProPickPicker() {
   const [drawCounter, setDrawCounter] = useState(0);
   const [records, setRecords] = useState<MatchRecord[]>([]);
   const [showDataList, setShowDataList] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "url" | "result">("idle");
 
   useEffect(() => {
     try {
@@ -58,6 +105,27 @@ export function ProPickPicker() {
   const events = useMemo(() => unique(PRO_PICKS.map((pick) => pick.event)), []);
   const regions = useMemo(() => unique(PRO_PICKS.map((pick) => pick.region)), []);
   const teams = useMemo(() => unique(PRO_PICKS.map((pick) => pick.team)), []);
+
+  useEffect(() => {
+    if (hydratedParams.current) return;
+    const params = new URL(window.location.href).searchParams;
+    setSideMode(readSideMode(params));
+    setLeftFilters(buildFiltersFromParams(params, "", maps, events, regions, teams));
+    setRightFilters(buildFiltersFromParams(params, "B", maps, events, regions, teams));
+    hydratedParams.current = true;
+  }, [events, maps, regions, teams]);
+
+  useEffect(() => {
+    if (!hydratedParams.current) return;
+    if (!window.location.pathname.endsWith("/pro-pick")) return;
+    const url = new URL(window.location.href);
+    url.search = "";
+    if (sideMode !== "both") url.searchParams.set("mode", sideMode);
+    writeFilterParams(url.searchParams, "", leftFilters);
+    if (sideMode === "both") writeFilterParams(url.searchParams, "B", rightFilters);
+    const query = url.searchParams.toString();
+    window.history.replaceState(null, "", `${url.pathname}${query ? `?${query}` : ""}`);
+  }, [leftFilters, rightFilters, sideMode]);
 
   const agentByName = useMemo(() => {
     return new Map(AGENTS.map((agent) => [agent.name, agent]));
@@ -142,14 +210,32 @@ export function ProPickPicker() {
     else setRightFilters(updater);
   }
 
+  async function copyCurrentUrl() {
+    await copyText(window.location.href);
+    setCopyState("url");
+    window.setTimeout(() => setCopyState("idle"), 1600);
+  }
+
+  async function copyPickResult() {
+    if (!left) return;
+    const lines = [formatPick("Team A", left)];
+    if (right) lines.push(formatPick("Team B", right));
+    await copyText(`VALORANDOMIZER PRO PICK\n${lines.join("\n\n")}\n\n${window.location.href}`);
+    setCopyState("result");
+    window.setTimeout(() => setCopyState("idle"), 1600);
+  }
+
   return (
     <section className="relative left-1/2 flex w-[calc(100vw-2rem)] max-w-[112rem] -translate-x-1/2 flex-col gap-6 sm:w-[calc(100vw-3rem)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+          <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-sentinel)]">
+            {t("landing.proEyebrow")}
+          </p>
+          <h2 className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)] sm:text-4xl">
             {t("proPick.heading")}
           </h2>
-          <p className="mt-1 text-sm text-[var(--color-muted)]">
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--color-muted)]">
             {t("proPick.subtitle")}
           </p>
         </div>
@@ -168,7 +254,7 @@ export function ProPickPicker() {
         </div>
       </div>
 
-      <div className="mx-auto grid w-full max-w-md gap-3 sm:grid-cols-[minmax(12rem,1fr)_minmax(9rem,auto)]">
+      <div className="mx-auto grid w-full max-w-2xl gap-3 sm:grid-cols-[minmax(12rem,1fr)_auto_auto]">
         <Select
           label={t("proPick.mode")}
           value={sideMode}
@@ -183,6 +269,9 @@ export function ProPickPicker() {
           className="min-h-12 w-full px-6 py-3 text-base sm:self-end"
         >
           {t("proPick.pick")}
+        </Button>
+        <Button type="button" variant="ghost" onClick={copyCurrentUrl} className="min-h-12 w-full px-6 py-3 text-base sm:self-end">
+          {copyState === "url" ? t("share.copied") : t("share.url")}
         </Button>
       </div>
 
@@ -219,6 +308,14 @@ export function ProPickPicker() {
         <PickResult key={left?.drawId ?? "left-empty"} label="Team A" pick={left} agentByName={agentByName} />
         <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
       </div>
+
+      {left ? (
+        <div className="flex justify-center">
+          <Button type="button" variant="ghost" onClick={copyPickResult} className="px-6">
+            {copyState === "result" ? t("share.copied") : t("actions.copy")}
+          </Button>
+        </div>
+      ) : null}
 
       <MatchHistory records={records} canRecord={Boolean(left)} hasRight={Boolean(right)} onRecord={recordMatch} onClear={clearRecords} />
     </section>
@@ -258,8 +355,6 @@ function DrawDataList({ entries, onClose }: { entries: DrawDataEntry[]; onClose:
                   <span>{entry.pick.map}</span>
                 </div>
                 <p className="mt-1 break-words font-display text-sm font-bold text-[var(--color-ink)]">{entry.pick.team}</p>
-                <p className="mt-1 break-words text-xs text-[var(--color-muted)]">{entry.pick.event}</p>
-                <p className="mt-1 break-words text-xs text-[var(--color-muted)]">{entry.pick.agents.join(" / ")}</p>
               </div>
             ))}
           </div>
@@ -509,6 +604,10 @@ function getOpponentLabel(proPick: ProPick) {
   const teams = proPick.match.split(" vs ");
   const opponent = teams.find((team) => team !== proPick.team);
   return opponent ? `vs ${opponent}` : proPick.match;
+}
+
+function formatPick(label: string, pick: ProPick) {
+  return `${label}: ${pick.team}\nMap: ${pick.map}\nEvent: ${pick.event}\nMatch: ${pick.match}\nAgents: ${pick.agents.join(" / ")}`;
 }
 
 function getOutcomeLabel(record: MatchRecord, t: ReturnType<typeof useTranslations>) {
