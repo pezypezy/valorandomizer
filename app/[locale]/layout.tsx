@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Noto_Sans_JP } from "next/font/google";
+import { M_PLUS_1_Code, Noto_Sans_JP, Orbitron } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -10,12 +9,17 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import "../globals.css";
 
-const hikomi = localFont({
-  src: [
-    { path: "../../public/fonts/HikomiFontS-Regular.ttf", weight: "400", style: "normal" },
-    { path: "../../public/fonts/HikomiFontS-Thin.ttf", weight: "200", style: "normal" },
-  ],
-  variable: "--font-hikomi",
+const orbitron = Orbitron({
+  weight: ["500", "700", "800", "900"],
+  subsets: ["latin"],
+  variable: "--font-orbitron",
+  display: "swap",
+});
+
+const mPlus1Code = M_PLUS_1_Code({
+  weight: ["400", "500", "700"],
+  subsets: ["latin"],
+  variable: "--font-mplus1code",
   display: "swap",
 });
 
@@ -44,7 +48,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${hikomi.variable} ${noto.variable}`}>
+    <html lang={locale} className={`${orbitron.variable} ${mPlus1Code.variable} ${noto.variable}`}>
       <body className="relative min-h-full">
         <NextIntlClientProvider>
           <Backdrop />
