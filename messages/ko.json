@@ -1,8 +1,29 @@
 {
   "app": {
     "title": "VALORANDOMIZER",
-    "tagline": "팀 랜덤 피커",
-    "subtitle": "롤 구성을 정하고 5명의 요원을 랜덤으로 소집하세요."
+    "tagline": "VALORANT 팀 구성 랜덤 생성기",
+    "subtitle": "롤 구성을 정하고 5명의 요원을 랜덤으로 소집하세요. 커스텀 게임, 5인큐, 방송 챌린지, 빠른 팀 드래프트에 사용할 수 있습니다."
+  },
+  "landing": {
+    "eyebrow": "Custom game toolkit",
+    "title": "VALORANT 커스텀을 팀 구성부터 재미있게.",
+    "description": "Valorandomizer는 롤 기반 랜덤 팀 구성과 과거 프로 구성 추첨을 결합한 VALORANT 팀 구성 도구입니다. 5인큐, 커스텀 로비, 방송 챌린지, 제한 플레이에 활용할 수 있습니다.",
+    "randomCta": "Random Pick 사용",
+    "proCta": "Pro Pick 사용",
+    "statTeam": "5인 요원 구성을 즉시 생성",
+    "statRoles": "4개 롤 인원수 지정 가능",
+    "statPro": "프로 구성을 조건별로 추첨",
+    "randomEyebrow": "Role based randomizer",
+    "proEyebrow": "Pro composition draft",
+    "howOneTitle": "1. 롤을 정하기",
+    "howOneBody": "타격대, 척후대, 전략가, 감시자의 인원수를 지정해 현실적인 5인 구성을 만들 수 있습니다.",
+    "howTwoTitle": "2. 고정하고 다시 뽑기",
+    "howTwoBody": "원하는 요원은 고정하고 바꾸고 싶은 슬롯만 다시 뽑을 수 있어, 팀원의 숙련도에 맞춰 조정하기 쉽습니다.",
+    "howThreeTitle": "3. URL로 공유",
+    "howThreeBody": "Random Pick과 Pro Pick은 전용 URL을 지원합니다. 맵, 팀, 필터 조건을 Discord나 X에 바로 공유할 수 있습니다.",
+    "useCaseEyebrow": "Recommended use",
+    "useCaseTitle": "5인큐, 커스텀, 방송 챌린지를 위한 VALORANT 구성 생성기",
+    "useCaseBody": "일반 랜덤 구성뿐 아니라 과거 프로 팀 구성을 이용한 대전 조건도 만들 수 있습니다. 프로 구성 제한, 맵 지정 VCT 구성 추첨, 지역별 Team A/B 대전 같은 방식에 적합합니다."
   },
   "mode": {
     "back": "뒤로",
@@ -16,8 +37,8 @@
   "roles": {
     "Duelist": "타격대",
     "Initiator": "척후대",
-    "Controller": "감시자",
-    "Sentinel": "전략가"
+    "Controller": "전략가",
+    "Sentinel": "감시자"
   },
   "config": {
     "heading": "롤 구성",
@@ -41,13 +62,17 @@
     "copy": "결과 복사",
     "copied": "복사됨"
   },
+  "share": {
+    "url": "공유 URL 복사",
+    "copied": "복사됨"
+  },
   "result": {
     "heading": "소집된 팀",
     "empty": "롤 구성을 정하고 소집하기를 누르세요."
   },
   "proPick": {
     "heading": "Pro Pick Draft",
-    "subtitle": "과거 프로 팀의 픽에서 커스텀 게임용 팀을 뽑습니다.",
+    "subtitle": "과거 프로 팀의 픽에서 커스텀 게임용 팀을 뽑습니다. 맵, 이벤트, 지역, 팀 조건을 URL로 공유할 수 있습니다.",
     "count": "{count} picks",
     "all": "All",
     "map": "Map",
@@ -75,6 +100,28 @@
     "recordDraw": "Draw",
     "outcomeWinner": "{team} win",
     "outcomeDraw": "Draw"
+  },
+  "legalNotice": {
+    "heading": "Unofficial fan project",
+    "body": "Valorandomizer was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+    "link": "Legal"
+  },
+  "legalPage": {
+    "eyebrow": "Legal / Fan Project Notice",
+    "title": "법무 및 권리 고지",
+    "intro": "Valorandomizer는 VALORANT 커뮤니티를 위한 무료 팬 프로젝트입니다. Riot Games의 공식 서비스가 아니며 Riot Games의 승인, 후원, 제휴를 받은 것이 아닙니다.",
+    "fanTitle": "Riot Games 비공식 팬 프로젝트 고지",
+    "fanBody": "Valorandomizer was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+    "ipTitle": "지식재산권 및 상표",
+    "ipBody": "VALORANT, 요원 이름, 요원 이미지 및 관련 게임 자산은 Riot Games 또는 각 권리자에게 귀속됩니다. 본 사이트는 해당 자산의 소유권을 주장하지 않으며 공식 로고나 상표를 공식 제휴 표시로 사용하지 않습니다.",
+    "dataTitle": "프로 구성 데이터",
+    "dataBody": "Pro Pick의 경기 및 구성 데이터는 공개 정보를 바탕으로 정리한 참고 데이터입니다. 외부 사이트 링크가 포함될 수 있으나 Valorandomizer는 해당 사이트와 제휴하지 않습니다.",
+    "privacyTitle": "개인정보",
+    "privacyBody": "현재 기능에서는 Pro Pick Match Records가 사용자의 브라우저 localStorage에 저장됩니다. 계정 가입이나 개인정보 입력은 필요하지 않습니다. 향후 분석, 광고, 로그인 기능이 추가되면 이 페이지를 업데이트해야 합니다.",
+    "accuracyTitle": "면책 조항",
+    "accuracyBody": "요원 구성, 프로 구성, 이벤트, 맵 정보의 정확성을 보장하지 않습니다. 패치, 로스터 변경, 맵 풀 변경에 따라 실제 게임 환경과 다를 수 있습니다.",
+    "officialNotice": "This project is not endorsed, sponsored, or affiliated with Riot Games.",
+    "contact": "권리자는 GitHub 저장소 또는 사이트 운영자를 통해 수정 및 삭제를 요청할 수 있습니다."
   },
   "locale": {
     "ja": "日本語",
