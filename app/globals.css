@@ -22,12 +22,18 @@
 
 /* Map next/font CSS variables onto Tailwind font tokens (inline = reference, not copy). */
 @theme inline {
-  --font-display: var(--font-hikomi);
+  --font-display: var(--font-orbitron), var(--font-mplus1code), var(--font-noto);
+  --font-display-en: var(--font-orbitron), var(--font-mplus1code), var(--font-noto);
+  --font-ui-ja: var(--font-mplus1code), var(--font-noto);
   --font-sans: var(--font-noto);
 }
 
 :root {
   color-scheme: dark;
+  --font-display-stack: var(--font-orbitron), var(--font-mplus1code), var(--font-noto), system-ui, sans-serif;
+  --font-display-en-stack: var(--font-orbitron), var(--font-mplus1code), var(--font-noto), system-ui, sans-serif;
+  --font-ui-ja-stack: var(--font-mplus1code), var(--font-noto), system-ui, sans-serif;
+  --font-body-stack: var(--font-noto), system-ui, sans-serif;
 }
 
 html,
@@ -38,15 +44,31 @@ body {
 body {
   background-color: var(--color-bg-deep);
   color: var(--color-ink);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-body-stack);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-/* Display font helper — Hikomi for headings, falls back to body font. */
+/* Display font helper: Orbitron for Latin glyphs, M PLUS 1 Code for Japanese glyphs, Noto for body-safe fallback. */
 .font-display {
-  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-family: var(--font-display-stack);
   letter-spacing: 0.04em;
+}
+
+/* English-only display / labels. Japanese text falls back to M PLUS 1 Code. */
+.font-display-en {
+  font-family: var(--font-display-en-stack);
+  letter-spacing: 0.06em;
+}
+
+/* Japanese UI / headings when Orbitron should not lead. */
+.font-ui-ja {
+  font-family: var(--font-ui-ja-stack);
+  letter-spacing: 0.04em;
+}
+
+.font-body {
+  font-family: var(--font-body-stack);
 }
 
 /* ---- Sci-Fi clip-paths (arwes-style angular frames) ---- */
