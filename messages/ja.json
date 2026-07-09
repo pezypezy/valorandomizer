@@ -1,8 +1,29 @@
 {
   "app": {
     "title": "VALORANDOMIZER",
-    "tagline": "チーム・ランダム・ピッカー",
-    "subtitle": "ロール構成を決めて、5人のエージェントをランダムに招集せよ。"
+    "tagline": "VALORANT チーム構成ランダマイザー",
+    "subtitle": "ロール構成を決めて、5人のエージェントをランダムに招集。カスタム、フルパ、配信用のネタ構成まで素早く作れます。"
+  },
+  "landing": {
+    "eyebrow": "Custom game toolkit",
+    "title": "VALORANTのカスタムを、構成から面白くする。",
+    "description": "Valorandomizerは、ロール指定のランダム構成と過去のプロ構成抽選をまとめたVALORANT向けチーム構成ツールです。5人フルパ、身内カスタム、配信企画、縛りプレイのスタート地点として使えます。",
+    "randomCta": "Random Pickを使う",
+    "proCta": "Pro Pickを使う",
+    "statTeam": "5人チーム構成を即生成",
+    "statRoles": "4ロールの人数を指定可能",
+    "statPro": "プロ構成を条件付きで抽選",
+    "randomEyebrow": "Role based randomizer",
+    "proEyebrow": "Pro composition draft",
+    "howOneTitle": "1. ロールを決める",
+    "howOneBody": "デュエリスト、イニシエーター、コントローラー、センチネルの人数を指定して、現実的な5人構成を作れます。",
+    "howTwoTitle": "2. 固定して振り直す",
+    "howTwoBody": "引いたエージェントを固定したまま、不要な枠だけ個別に振り直せます。身内の得意ロール調整にも使いやすい設計です。",
+    "howThreeTitle": "3. URLで共有する",
+    "howThreeBody": "Random PickとPro Pickは専用URLに対応。マップやチーム条件を含めて、DiscordやXに共有できます。",
+    "useCaseEyebrow": "Recommended use",
+    "useCaseTitle": "フルパ、カスタム、配信企画に向いたVALORANT構成ジェネレーター",
+    "useCaseBody": "普通のランダムピックだけでなく、過去のプロチーム構成を使った対戦条件も作れます。『今日はプロ構成縛り』『マップだけ指定してVCT構成を引く』『Team A/Bに別地域の構成を配る』のような遊び方に向いています。"
   },
   "mode": {
     "back": "戻る",
@@ -41,13 +62,17 @@
     "copy": "結果をコピー",
     "copied": "コピーしました"
   },
+  "share": {
+    "url": "共有URLをコピー",
+    "copied": "コピーしました"
+  },
   "result": {
     "heading": "招集されたチーム",
     "empty": "ロール構成を決めて「招集する」を押してください。"
   },
   "proPick": {
     "heading": "Pro Pick Draft",
-    "subtitle": "過去のプロチームのピックからカスタム用のチームを抽選します。",
+    "subtitle": "過去のプロチームのピックからカスタム用のチームを抽選します。マップ、イベント、地域、チーム条件をURLごと共有できます。",
     "count": "{count} picks",
     "all": "All",
     "map": "Map",
@@ -75,6 +100,28 @@
     "recordDraw": "引き分け",
     "outcomeWinner": "{team} 勝利",
     "outcomeDraw": "引き分け"
+  },
+  "legalNotice": {
+    "heading": "Unofficial fan project",
+    "body": "Valorandomizer was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+    "link": "Legal"
+  },
+  "legalPage": {
+    "eyebrow": "Legal / Fan Project Notice",
+    "title": "法務・権利表記",
+    "intro": "Valorandomizerは、VALORANTコミュニティ向けの無料ファンプロジェクトです。Riot Gamesの公式サービスではなく、Riot Gamesによる承認・後援・提携を受けたものではありません。",
+    "fanTitle": "Riot Games非公式ファンプロジェクト表記",
+    "fanBody": "Valorandomizer was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+    "ipTitle": "知的財産・商標について",
+    "ipBody": "VALORANT、エージェント名、エージェント画像、関連するゲーム内アセットはRiot Gamesまたは各権利者に帰属します。本サイトはそれらの権利を主張せず、公式ロゴや商標を公式提携の表示として使用しません。",
+    "dataTitle": "プロ構成データについて",
+    "dataBody": "Pro Pickの試合・構成データは公開情報をもとに整理した参考データです。外部サイトへのソースリンクを含む場合がありますが、各外部サイトとは提携していません。",
+    "privacyTitle": "プライバシーについて",
+    "privacyBody": "現時点の機能では、Pro PickのMatch Recordsはユーザーのブラウザ内のlocalStorageに保存されます。アカウント登録や個人情報入力は不要です。将来、分析・広告・ログイン機能を追加する場合は、このページを更新します。",
+    "accuracyTitle": "免責事項",
+    "accuracyBody": "エージェント構成、プロ構成、イベント情報、マップ情報は正確性を保証するものではありません。パッチ更新、ロスター変更、マッププール変更などにより、実際のゲーム環境と異なる場合があります。",
+    "officialNotice": "This project is not endorsed, sponsored, or affiliated with Riot Games.",
+    "contact": "権利者からの修正・削除依頼がある場合は、GitHubリポジトリまたはサイト運営者までご連絡ください。"
   },
   "locale": {
     "ja": "日本語",
