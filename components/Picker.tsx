@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
 import { AGENTS } from "@/lib/agents";
@@ -20,18 +21,16 @@ import { Button } from "./ui/Button";
 
 type PickerMode = "random" | "pro";
 
-const MODE_HASH: Record<PickerMode, string> = {
-  random: "#random-pick",
-  pro: "#pro-pick",
+type PickerProps = {
+  initialMode?: PickerMode | null;
+  locale: string;
 };
 
-function modeFromHash(hash: string): PickerMode | null {
-  if (hash === MODE_HASH.random) return "random";
-  if (hash === MODE_HASH.pro) return "pro";
-  return null;
-}
+const MODE_PATH: Record<PickerMode, string> = {
+  random: "random-pick",
+  pro: "pro-pick",
+};
 
-/** Random composition of TEAM_SIZE across the four roles (respecting pools). */
 function randomCounts(available: RoleCounts): RoleCounts {
   const counts: RoleCounts = { Duelist: 0, Initiator: 0, Controller: 0, Sentinel: 0 };
   for (let i = 0; i < TEAM_SIZE; i++) {
@@ -42,41 +41,90 @@ function randomCounts(available: RoleCounts): RoleCounts {
   return counts;
 }
 
-export function Picker() {
-  const t = useTranslations();
-  const available = useMemo(() => countByRole(AGENTS), []);
+function routeFor(locale: string, mode: PickerMode) {
+  return `/${locale}/${MODE_PATH[mode]}`;
+}
 
-  const [mode, setMode] = useState<PickerMode | null>(null);
+function readCountParam(params: URLSearchParams, key: string, fallback: number, max: number) {
+  const raw = params.get(key);
+  if (raw === null) return fallback;
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value) || value < 0 || value > max) return fallback;
+  return value;
+}
+
+function buildRandomUrl(counts: RoleCounts) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("duelist", String(counts.Duelist));
+  url.searchParams.set("initiator", String(counts.Initiator));
+  url.searchParams.set("controller", String(counts.Controller));
+  url.searchParams.set("sentinel", String(counts.Sentinel));
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+}
+
+export function Picker({ initialMode = null, locale }: PickerProps) {
+  const t = useTranslations();
+  const router = useRouter();
+  const available = useMemo(() => countByRole(AGENTS), []);
+  const hydratedRandomParams = useRef(false);
+
+  const [mode, setMode] = useState<PickerMode | null>(initialMode);
   const [counts, setCounts] = useState<RoleCounts>(DEFAULT_COUNTS);
   const [team, setTeam] = useState<Agent[] | null>(null);
   const [locked, setLocked] = useState<Set<string>>(new Set());
   const [rollId, setRollId] = useState(0);
+  const [copyState, setCopyState] = useState<"idle" | "url" | "result">("idle");
 
   const total = totalCount(counts);
   const valid = validateCounts(AGENTS, counts).ok;
 
   useEffect(() => {
-    const syncMode = () => setMode(modeFromHash(window.location.hash));
-    syncMode();
-    window.addEventListener("popstate", syncMode);
-    window.addEventListener("hashchange", syncMode);
-    return () => {
-      window.removeEventListener("popstate", syncMode);
-      window.removeEventListener("hashchange", syncMode);
+    setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
+    if (initialMode !== "random" || hydratedRandomParams.current) return;
+
+    const params = new URL(window.location.href).searchParams;
+    const nextCounts: RoleCounts = {
+      Duelist: readCountParam(params, "duelist", DEFAULT_COUNTS.Duelist, available.Duelist),
+      Initiator: readCountParam(params, "initiator", DEFAULT_COUNTS.Initiator, available.Initiator),
+      Controller: readCountParam(params, "controller", DEFAULT_COUNTS.Controller, available.Controller),
+      Sentinel: readCountParam(params, "sentinel", DEFAULT_COUNTS.Sentinel, available.Sentinel),
     };
-  }, []);
+
+    if (validateCounts(AGENTS, nextCounts).ok) setCounts(nextCounts);
+    hydratedRandomParams.current = true;
+  }, [available, initialMode]);
+
+  useEffect(() => {
+    if (mode !== "random" || !hydratedRandomParams.current) return;
+    if (!window.location.pathname.endsWith("/random-pick")) return;
+    window.history.replaceState(null, "", buildRandomUrl(counts));
+  }, [counts, mode]);
 
   function chooseMode(nextMode: PickerMode) {
-    window.history.pushState(null, "", MODE_HASH[nextMode]);
-    setMode(nextMode);
+    router.push(routeFor(locale, nextMode));
   }
 
   function goBackToModeSelect() {
-    if (modeFromHash(window.location.hash)) {
-      window.history.back();
-      return;
-    }
-    setMode(null);
+    router.push(`/${locale}`);
   }
 
   function changeCount(role: Role, delta: number) {
@@ -129,11 +177,32 @@ export function Picker() {
     });
   }
 
+  async function copyCurrentUrl() {
+    const url = typeof window === "undefined" ? routeFor(locale, "random") : window.location.href;
+    await copyText(url);
+    setCopyState("url");
+    window.setTimeout(() => setCopyState("idle"), 1600);
+  }
+
+  async function copyRandomResult() {
+    if (!team) return;
+    const grouped = ROLES
+      .map((role) => {
+        const names = team.filter((agent) => agent.role === role).map((agent) => agent.name).join(" / ") || "-";
+        return `${t(`roles.${role}`)}: ${names}`;
+      })
+      .join("\n");
+
+    await copyText(`VALORANDOMIZER RANDOM PICK\n${grouped}\n\n${window.location.href}`);
+    setCopyState("result");
+    window.setTimeout(() => setCopyState("idle"), 1600);
+  }
+
   return (
     <div className="flex flex-col gap-10 pt-2">
       <AnimatePresence mode="wait">
         {!mode ? (
-          <ModeSelection key="mode-select" onSelect={chooseMode} />
+          <LandingPage key="landing" onSelect={chooseMode} />
         ) : (
           <motion.div
             key={mode}
@@ -143,19 +212,27 @@ export function Picker() {
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col gap-10"
           >
-            <div className="flex justify-start">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <Button variant="ghost" onClick={goBackToModeSelect} className="px-4">
                 {t("mode.back")}
               </Button>
+              {mode === "random" ? (
+                <Button variant="ghost" onClick={copyCurrentUrl} className="px-4">
+                  {copyState === "url" ? t("share.copied") : t("share.url")}
+                </Button>
+              ) : null}
             </div>
 
             {mode === "random" ? (
               <>
                 <section className="text-center">
-                  <h1 className="font-display text-4xl font-bold tracking-wide text-[var(--color-ink)] sm:text-5xl">
+                  <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)]">
+                    {t("landing.randomEyebrow")}
+                  </p>
+                  <h1 className="mt-3 font-display text-4xl font-bold tracking-wide text-[var(--color-ink)] sm:text-5xl">
                     {t("app.tagline")}
                   </h1>
-                  <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--color-muted)]">
+                  <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[var(--color-muted)]">
                     {t("app.subtitle")}
                   </p>
                 </section>
@@ -218,9 +295,16 @@ export function Picker() {
                 </section>
 
                 <section className="flex flex-col gap-4">
-                  <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
-                    {t("result.heading")}
-                  </h2>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
+                      {t("result.heading")}
+                    </h2>
+                    {team ? (
+                      <Button variant="ghost" onClick={copyRandomResult} className="px-4">
+                        {copyState === "result" ? t("share.copied") : t("actions.copy")}
+                      </Button>
+                    ) : null}
+                  </div>
                   <AnimatePresence mode="wait">
                     {team ? (
                       <motion.div
@@ -269,17 +353,74 @@ export function Picker() {
   );
 }
 
-function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
+function LandingPage({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
   const t = useTranslations();
 
   return (
-    <motion.section
+    <motion.div
       initial={{ opacity: 0, filter: "blur(8px)" }}
       animate={{ opacity: 1, filter: "blur(0px)" }}
       exit={{ opacity: 0, filter: "blur(8px)" }}
       transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-      className="relative left-1/2 -mt-2 grid min-h-[calc(100vh-5.5rem)] w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:grid-cols-2"
+      className="flex flex-col gap-10"
     >
+      <section className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-16 sm:px-6 lg:py-24">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div>
+            <p className="font-display text-xs font-bold uppercase tracking-[0.35em] text-[var(--color-primary)]">
+              {t("landing.eyebrow")}
+            </p>
+            <h1 className="mt-5 max-w-4xl font-display text-[clamp(3.2rem,8vw,7rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">
+              {t("landing.title")}
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-[var(--color-muted)] sm:text-lg">
+              {t("landing.description")}
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button type="button" onClick={() => onSelect("random")} className="px-7 py-3">
+                {t("landing.randomCta")}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => onSelect("pro")} className="px-7 py-3">
+                {t("landing.proCta")}
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <LandingStat value="5" label={t("landing.statTeam")} />
+            <LandingStat value="4" label={t("landing.statRoles")} />
+            <LandingStat value="VCT" label={t("landing.statPro")} />
+          </div>
+        </div>
+      </section>
+
+      <ModeSelection onSelect={onSelect} />
+
+      <section className="grid gap-3 md:grid-cols-3">
+        <InfoCard title={t("landing.howOneTitle")} body={t("landing.howOneBody")} />
+        <InfoCard title={t("landing.howTwoTitle")} body={t("landing.howTwoBody")} />
+        <InfoCard title={t("landing.howThreeTitle")} body={t("landing.howThreeBody")} />
+      </section>
+
+      <section className="clip-frame border border-[var(--color-line)] bg-[var(--color-surface)] p-6 sm:p-8">
+        <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)]">
+          {t("landing.useCaseEyebrow")}
+        </p>
+        <h2 className="mt-3 font-display text-2xl font-bold text-[var(--color-ink)] sm:text-3xl">
+          {t("landing.useCaseTitle")}
+        </h2>
+        <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-muted)]">
+          {t("landing.useCaseBody")}
+        </p>
+      </section>
+    </motion.div>
+  );
+}
+
+function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
+  const t = useTranslations();
+
+  return (
+    <section className="relative left-1/2 grid w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:grid-cols-2">
       <SplitChoice
         title="RANDOM PICK"
         description={t("mode.randomDescription")}
@@ -296,7 +437,25 @@ function ModeSelection({ onSelect }: { onSelect: (mode: PickerMode) => void }) {
         direction="right"
         onClick={() => onSelect("pro")}
       />
-    </motion.section>
+    </section>
+  );
+}
+
+function LandingStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="clip-frame border border-[var(--color-line)] bg-[var(--color-surface-2)] p-5">
+      <p className="font-display text-4xl font-bold text-[var(--color-primary)]">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{label}</p>
+    </div>
+  );
+}
+
+function InfoCard({ title, body }: { title: string; body: string }) {
+  return (
+    <article className="clip-card border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
+      <h3 className="font-display text-lg font-bold text-[var(--color-ink)]">{title}</h3>
+      <p className="mt-3 text-sm leading-7 text-[var(--color-muted)]">{body}</p>
+    </article>
   );
 }
 
@@ -324,7 +483,7 @@ function SplitChoice({
       transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className="group relative flex min-h-[48vh] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-8 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] sm:px-12 md:min-h-full md:border-b-0 md:border-r md:px-14 lg:px-20 last:md:border-r-0"
+      className="group relative flex min-h-[22rem] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-8 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] sm:px-12 md:min-h-[30rem] md:border-b-0 md:border-r md:px-14 lg:px-20 last:md:border-r-0"
     >
       <div
         className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -335,13 +494,13 @@ function SplitChoice({
         style={{ background: accent, [direction === "left" ? "right" : "left"]: 0 }}
       />
       <div className="relative flex w-full flex-col justify-between gap-10 self-stretch">
-        <div className="max-w-2xl pt-[8vh] md:pt-[10vh]">
+        <div className="max-w-2xl pt-6 md:pt-10">
           <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-muted)] sm:text-sm">
             {meta}
           </p>
-          <h1 className="mt-5 font-display text-[clamp(3.5rem,5.6vw,7rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">
+          <h2 className="mt-5 font-display text-[clamp(3.5rem,5.6vw,7rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">
             {title}
-          </h1>
+          </h2>
           <p className="mt-6 max-w-xl text-sm leading-7 text-[var(--color-muted)] sm:text-base">
             {description}
           </p>
