@@ -23,7 +23,7 @@ export function Button({
       whileHover={props.disabled ? undefined : { scale: 1.02 }}
       whileTap={props.disabled ? undefined : { scale: 0.97 }}
       className={clsx(
-        "clip-btn relative inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors",
+        "clip-btn font-display relative inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-40",
         isPrimary
           ? "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-soft)]"
