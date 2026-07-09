@@ -1,8 +1,29 @@
 {
   "app": {
     "title": "VALORANDOMIZER",
-    "tagline": "TEAM RANDOM PICKER",
-    "subtitle": "Set your role composition and summon five agents at random."
+    "tagline": "VALORANT Team Randomizer",
+    "subtitle": "Set your role composition and summon five agents at random. Built for custom games, five-stacks, stream challenges, and quick team drafts."
+  },
+  "landing": {
+    "eyebrow": "Custom game toolkit",
+    "title": "Make VALORANT customs start with a better team draft.",
+    "description": "Valorandomizer combines role-based random squads with past pro composition drafts. Use it for five-stacks, custom lobbies, stream challenges, and quick rulesets when your lobby needs a spark.",
+    "randomCta": "Use Random Pick",
+    "proCta": "Use Pro Pick",
+    "statTeam": "Generate five-agent squads instantly",
+    "statRoles": "Choose counts across four roles",
+    "statPro": "Draw pro setups with filters",
+    "randomEyebrow": "Role based randomizer",
+    "proEyebrow": "Pro composition draft",
+    "howOneTitle": "1. Choose the roles",
+    "howOneBody": "Set how many Duelists, Initiators, Controllers, and Sentinels you want, then generate a realistic five-agent squad.",
+    "howTwoTitle": "2. Lock and reroll",
+    "howTwoBody": "Keep agents you like and reroll only the slots you want to change, so your lobby can adjust around comfort picks.",
+    "howThreeTitle": "3. Share the URL",
+    "howThreeBody": "Random Pick and Pro Pick have dedicated URLs. Share role counts, maps, teams, and filters directly to Discord or X.",
+    "useCaseEyebrow": "Recommended use",
+    "useCaseTitle": "A VALORANT composition generator for five-stacks, customs, and stream challenges",
+    "useCaseBody": "Use normal random squads or draft past pro team setups. Try pro-composition-only customs, map-filtered VCT drafts, or Team A vs Team B challenges across regions."
   },
   "mode": {
     "back": "Back",
@@ -41,13 +62,17 @@
     "copy": "Copy result",
     "copied": "Copied"
   },
+  "share": {
+    "url": "Copy share URL",
+    "copied": "Copied"
+  },
   "result": {
     "heading": "Your Squad",
     "empty": "Set your role composition and hit Summon."
   },
   "proPick": {
     "heading": "Pro Pick Draft",
-    "subtitle": "Pick a past pro team setup for custom games.",
+    "subtitle": "Draw past pro team setups for custom games. Share map, event, region, and team filters directly in the URL.",
     "count": "{count} picks",
     "all": "All",
     "map": "Map",
@@ -75,6 +100,28 @@
     "recordDraw": "Draw",
     "outcomeWinner": "{team} win",
     "outcomeDraw": "Draw"
+  },
+  "legalNotice": {
+    "heading": "Unofficial fan project",
+    "body": "Valorandomizer was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+    "link": "Legal"
+  },
+  "legalPage": {
+    "eyebrow": "Legal / Fan Project Notice",
+    "title": "Legal and IP Notice",
+    "intro": "Valorandomizer is a free fan project for the VALORANT community. It is not an official Riot Games service and is not endorsed, sponsored, or affiliated with Riot Games.",
+    "fanTitle": "Riot Games fan project notice",
+    "fanBody": "Valorandomizer was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+    "ipTitle": "Intellectual property and trademarks",
+    "ipBody": "VALORANT, agent names, agent artwork, and related game assets belong to Riot Games or their respective owners. This site does not claim ownership over those assets and does not use official logos or trademarks to imply endorsement.",
+    "dataTitle": "Pro composition data",
+    "dataBody": "Pro Pick match and composition data is reference data compiled from publicly available information. Source links may point to external sites, but Valorandomizer is not affiliated with those sites.",
+    "privacyTitle": "Privacy",
+    "privacyBody": "In the current feature set, Pro Pick Match Records are stored in your browser's localStorage. No account signup or personal information input is required. If analytics, ads, or login features are added later, this page should be updated.",
+    "accuracyTitle": "Disclaimer",
+    "accuracyBody": "Agent compositions, pro setups, events, and maps are provided for convenience and are not guaranteed to be accurate. Patch changes, roster moves, and map pool changes may make the data differ from the live game environment.",
+    "officialNotice": "This project is not endorsed, sponsored, or affiliated with Riot Games.",
+    "contact": "Rights holders can request corrections or removals through the GitHub repository or the site operator."
   },
   "locale": {
     "ja": "日本語",
