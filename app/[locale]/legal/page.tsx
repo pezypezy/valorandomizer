@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
+import { buildLocalizedMetadata } from "@/lib/seo";
 
-const META: Record<string, Metadata> = {
+const META = {
   ja: {
     title: "Legal / Fan Project Notice | Valorandomizer",
     description: "ValorandomizerのRiot Games非公式ファンプロジェクト表記、権利表記、免責、プライバシーに関する説明。",
@@ -15,11 +15,12 @@ const META: Record<string, Metadata> = {
     title: "Legal / Fan Project Notice | Valorandomizer",
     description: "Valorandomizer의 Riot Games 비공식 팬 프로젝트 고지, 권리 표기, 면책, 개인정보 관련 안내입니다.",
   },
-};
+} as const;
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/legal">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/[locale]/legal">) {
   const { locale } = await params;
-  return META[locale] ?? META.en;
+  const meta = META[locale as keyof typeof META] ?? META.en;
+  return buildLocalizedMetadata(locale, { ...meta, path: "legal" });
 }
 
 export default async function LegalPage({ params }: PageProps<"/[locale]/legal">) {
