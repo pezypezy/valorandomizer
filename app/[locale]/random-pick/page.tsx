@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
 import { setRequestLocale } from "next-intl/server";
 import { Picker } from "@/components/Picker";
+import { buildLocalizedMetadata } from "@/lib/seo";
 
-const META: Record<string, Metadata> = {
+const META = {
   ja: {
     title: "VALORANT Random Pick | ロール指定チーム構成ランダマイザー",
     description: "デュエリスト、イニシエーター、コントローラー、センチネルの人数を指定してVALORANTの5人構成をランダム生成。共有URLにも対応。",
@@ -15,11 +15,12 @@ const META: Record<string, Metadata> = {
     title: "VALORANT Random Pick | 롤 지정 팀 랜덤 생성기",
     description: "타격대, 척후대, 전략가, 감시자 인원수를 지정해 VALORANT 5인 구성을 랜덤 생성하고 URL로 공유하세요.",
   },
-};
+} as const;
 
-export async function generateMetadata({ params }: PageProps<"/[locale]/random-pick">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/[locale]/random-pick">) {
   const { locale } = await params;
-  return META[locale] ?? META.en;
+  const meta = META[locale as keyof typeof META] ?? META.en;
+  return buildLocalizedMetadata(locale, { ...meta, path: "random-pick" });
 }
 
 export default async function RandomPickPage({ params }: PageProps<"/[locale]/random-pick">) {
