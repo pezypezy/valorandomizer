@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { AGENTS } from "@/lib/agents";
 import {
@@ -19,6 +21,8 @@ interface UiChatMessage {
   content: string;
   mode?: "ai" | "fallback" | "rejected";
 }
+
+type Language = "ja" | "en" | "ko";
 
 const COPY = {
   ja: {
@@ -131,13 +135,15 @@ const COPY = {
   },
 } as const;
 
+type Copy = (typeof COPY)[Language];
+
 const CATEGORY_STYLES: Record<MetaRecommendationCategory, string> = {
   theory: "border-[var(--color-primary)]/60",
   offMeta: "border-[var(--color-initiator)]/60",
   soloQueue: "border-[var(--color-sentinel)]/60",
 };
 
-function categoryLabel(category: MetaRecommendationCategory, copy: (typeof COPY)["ja"]): string {
+function categoryLabel(category: MetaRecommendationCategory, copy: Copy): string {
   if (category === "theory") return copy.theory;
   if (category === "offMeta") return copy.offMeta;
   return copy.soloQueue;
@@ -154,7 +160,13 @@ function AgentRow({ agents }: { agents: string[] }) {
             className="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-black/20 py-1 pl-1 pr-3 text-sm"
           >
             {agent ? (
-              <img src={agent.icon} alt="" className="h-7 w-7 rounded-full bg-[var(--color-surface-2)] object-cover" />
+              <Image
+                src={agent.icon}
+                alt=""
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-full bg-[var(--color-surface-2)] object-cover"
+              />
             ) : null}
             {name}
           </span>
@@ -164,13 +176,7 @@ function AgentRow({ agents }: { agents: string[] }) {
   );
 }
 
-function RecommendationCard({
-  recommendation,
-  copy,
-}: {
-  recommendation: MetaRecommendation;
-  copy: (typeof COPY)["ja"];
-}) {
+function RecommendationCard({ recommendation, copy }: { recommendation: MetaRecommendation; copy: Copy }) {
   const confidenceLabel =
     recommendation.confidence === "high"
       ? copy.high
@@ -188,28 +194,14 @@ function RecommendationCard({
       </div>
       <AgentRow agents={recommendation.agents} />
       <dl className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-        <div>
-          <dt className="text-[var(--color-muted)]">{copy.adjusted}</dt>
-          <dd className="mt-1 font-display text-xl font-bold">{recommendation.adjustedWinRate.toFixed(1)}%</dd>
-        </div>
-        <div>
-          <dt className="text-[var(--color-muted)]">{copy.raw}</dt>
-          <dd className="mt-1 font-display text-xl font-bold">{recommendation.rawWinRate.toFixed(1)}%</dd>
-        </div>
-        <div>
-          <dt className="text-[var(--color-muted)]">{copy.pickRate}</dt>
-          <dd className="mt-1 font-display text-xl font-bold">{recommendation.pickRate.toFixed(1)}%</dd>
-        </div>
-        <div>
-          <dt className="text-[var(--color-muted)]">{copy.matches}</dt>
-          <dd className="mt-1 font-display text-xl font-bold">{recommendation.matchCount.toLocaleString()}</dd>
-        </div>
+        <div><dt className="text-[var(--color-muted)]">{copy.adjusted}</dt><dd className="mt-1 font-display text-xl font-bold">{recommendation.adjustedWinRate.toFixed(1)}%</dd></div>
+        <div><dt className="text-[var(--color-muted)]">{copy.raw}</dt><dd className="mt-1 font-display text-xl font-bold">{recommendation.rawWinRate.toFixed(1)}%</dd></div>
+        <div><dt className="text-[var(--color-muted)]">{copy.pickRate}</dt><dd className="mt-1 font-display text-xl font-bold">{recommendation.pickRate.toFixed(1)}%</dd></div>
+        <div><dt className="text-[var(--color-muted)]">{copy.matches}</dt><dd className="mt-1 font-display text-xl font-bold">{recommendation.matchCount.toLocaleString()}</dd></div>
       </dl>
       <h3 className="mt-5 text-sm font-semibold text-[var(--color-muted)]">{copy.reasons}</h3>
       <ul className="mt-2 space-y-1 text-sm">
-        {recommendation.reasons.map((reason) => (
-          <li key={reason}>・{reason}</li>
-        ))}
+        {recommendation.reasons.map((reason) => <li key={reason}>・{reason}</li>)}
       </ul>
       <p className="mt-4 border-t border-[var(--color-line)] pt-3 text-xs text-[var(--color-muted)]">
         {recommendation.caution}
@@ -219,8 +211,9 @@ function RecommendationCard({
 }
 
 export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
-  const language = locale === "en" || locale === "ko" ? locale : "ja";
-  const copy = COPY[language] as (typeof COPY)["ja"];
+  const router = useRouter();
+  const language: Language = locale === "en" || locale === "ko" ? locale : "ja";
+  const copy: Copy = COPY[language];
   const [map, setMap] = useState<(typeof META_MAPS)[number]>("Ascent");
   const [rank, setRank] = useState<(typeof META_RANKS)[number]>("Ascendant");
   const [input, setInput] = useState("");
@@ -244,7 +237,7 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
         body: JSON.stringify({ message: trimmed, map, rank, locale: language, history: previousMessages }),
       });
       if (response.status === 401) {
-        window.location.href = `/${language}/meta-beta/login`;
+        router.push(`/${language}/meta-beta/login`);
         return;
       }
       const result = (await response.json()) as {
@@ -253,11 +246,7 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
       };
       setMessages((current) => [
         ...current,
-        {
-          role: "assistant",
-          content: result.reply || copy.empty,
-          mode: result.mode ?? "fallback",
-        },
+        { role: "assistant", content: result.reply || copy.empty, mode: result.mode ?? "fallback" },
       ]);
     } catch {
       setMessages((current) => [
@@ -284,10 +273,7 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
         </div>
         <form action="/api/meta-beta/logout" method="post">
           <input type="hidden" name="returnTo" value={`/${language}/meta-beta/login`} />
-          <button
-            type="submit"
-            className="clip-btn border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2 text-sm transition hover:border-[var(--color-primary)]"
-          >
+          <button type="submit" className="clip-btn border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2 text-sm transition hover:border-[var(--color-primary)]">
             {copy.logout}
           </button>
         </form>
@@ -301,39 +287,23 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
         <div className="grid gap-4 md:grid-cols-4">
           <label className="text-sm text-[var(--color-muted)]">
             {copy.map}
-            <select
-              value={map}
-              onChange={(event) => setMap(event.target.value as (typeof META_MAPS)[number])}
-              className="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]"
-            >
+            <select value={map} onChange={(event) => setMap(event.target.value as (typeof META_MAPS)[number])} className="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]">
               {META_MAPS.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
           <label className="text-sm text-[var(--color-muted)]">
             {copy.rank}
-            <select
-              value={rank}
-              onChange={(event) => setRank(event.target.value as (typeof META_RANKS)[number])}
-              className="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]"
-            >
+            <select value={rank} onChange={(event) => setRank(event.target.value as (typeof META_RANKS)[number])} className="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]">
               {META_RANKS.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
-          <div className="text-sm text-[var(--color-muted)]">
-            {copy.period}
-            <p className="mt-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]">{copy.periodValue}</p>
-          </div>
-          <div className="text-sm text-[var(--color-muted)]">
-            {copy.region}
-            <p className="mt-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]">{copy.regionValue}</p>
-          </div>
+          <div className="text-sm text-[var(--color-muted)]">{copy.period}<p className="mt-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]">{copy.periodValue}</p></div>
+          <div className="text-sm text-[var(--color-muted)]">{copy.region}<p className="mt-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-3 py-3 text-[var(--color-ink)]">{copy.regionValue}</p></div>
         </div>
       </section>
 
       <section className="mt-7 grid gap-5 xl:grid-cols-3">
-        {recommendations.map((recommendation) => (
-          <RecommendationCard key={recommendation.category} recommendation={recommendation} copy={copy} />
-        ))}
+        {recommendations.map((recommendation) => <RecommendationCard key={recommendation.category} recommendation={recommendation} copy={copy} />)}
       </section>
 
       <section className="clip-frame mt-8 border border-[var(--color-line)] bg-[var(--color-surface)]/85 p-5 sm:p-7">
@@ -345,58 +315,29 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
 
         <div className="mt-5 flex flex-wrap gap-2">
           {[copy.quickOne, copy.quickTwo, copy.quickThree].map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              onClick={() => void ask(prompt)}
-              disabled={loading}
-              className="rounded-full border border-[var(--color-line)] px-3 py-2 text-sm transition hover:border-[var(--color-primary)] disabled:opacity-50"
-            >
+            <button key={prompt} type="button" onClick={() => void ask(prompt)} disabled={loading} className="rounded-full border border-[var(--color-line)] px-3 py-2 text-sm transition hover:border-[var(--color-primary)] disabled:opacity-50">
               {prompt}
             </button>
           ))}
         </div>
 
         <div className="mt-5 min-h-40 space-y-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-deep)]/80 p-4" aria-live="polite">
-          {messages.length === 0 ? (
-            <p className="text-sm text-[var(--color-muted)]">{copy.empty}</p>
-          ) : (
-            messages.map((message, index) => (
-              <div
-                key={`${message.role}-${index}`}
-                className={`max-w-[92%] rounded-xl px-4 py-3 text-sm leading-6 ${
-                  message.role === "user"
-                    ? "ml-auto bg-[var(--color-primary)] text-white"
-                    : "border border-[var(--color-line)] bg-[var(--color-surface-2)]"
-                }`}
-              >
-                {message.role === "assistant" && message.mode ? (
-                  <span className="mb-2 inline-block rounded-full border border-[var(--color-line)] px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
-                    {message.mode === "ai" ? copy.ai : message.mode === "rejected" ? copy.rejected : copy.fallback}
-                  </span>
-                ) : null}
-                <p className="whitespace-pre-wrap">{message.content}</p>
-              </div>
-            ))
-          )}
+          {messages.length === 0 ? <p className="text-sm text-[var(--color-muted)]">{copy.empty}</p> : messages.map((message, index) => (
+            <div key={`${message.role}-${index}`} className={`max-w-[92%] rounded-xl px-4 py-3 text-sm leading-6 ${message.role === "user" ? "ml-auto bg-[var(--color-primary)] text-white" : "border border-[var(--color-line)] bg-[var(--color-surface-2)]"}`}>
+              {message.role === "assistant" && message.mode ? (
+                <span className="mb-2 inline-block rounded-full border border-[var(--color-line)] px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+                  {message.mode === "ai" ? copy.ai : message.mode === "rejected" ? copy.rejected : copy.fallback}
+                </span>
+              ) : null}
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            </div>
+          ))}
         </div>
 
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3 sm:flex-row">
           <label className="sr-only" htmlFor="meta-chat-input">{copy.aiTitle}</label>
-          <textarea
-            id="meta-chat-input"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            maxLength={1200}
-            rows={3}
-            placeholder={copy.placeholder}
-            className="min-h-24 flex-1 resize-y rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-4 py-3 text-base outline-none focus:border-[var(--color-primary)]"
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="clip-btn self-stretch bg-[var(--color-primary)] px-6 py-3 font-bold text-white transition hover:bg-[var(--color-primary-soft)] disabled:cursor-not-allowed disabled:opacity-50 sm:self-end"
-          >
+          <textarea id="meta-chat-input" value={input} onChange={(event) => setInput(event.target.value)} maxLength={1200} rows={3} placeholder={copy.placeholder} className="min-h-24 flex-1 resize-y rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-4 py-3 text-base outline-none focus:border-[var(--color-primary)]" />
+          <button type="submit" disabled={loading || !input.trim()} className="clip-btn self-stretch bg-[var(--color-primary)] px-6 py-3 font-bold text-white transition hover:bg-[var(--color-primary-soft)] disabled:cursor-not-allowed disabled:opacity-50 sm:self-end">
             {loading ? copy.sending : copy.send}
           </button>
         </form>
