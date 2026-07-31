@@ -3,7 +3,20 @@ import type { DiscordSessionPayload } from "./types";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const IV_LENGTH = 12;
-const MAX_TOKEN_LENGTH = 4096;
+const MAX_TOKEN_LENGTH = 1024;
+
+type CompactSession = [
+  1,
+  "r" | "p",
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  "ja" | "en" | "ko",
+  number,
+];
 
 function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
@@ -27,28 +40,58 @@ async function importSessionKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
-function isSessionPayload(value: unknown): value is DiscordSessionPayload {
-  if (!value || typeof value !== "object") return false;
-  const payload = value as Record<string, unknown>;
-  return (
-    payload.v === 1 &&
-    (payload.mode === "random" || payload.mode === "pro") &&
-    typeof payload.applicationId === "string" &&
-    typeof payload.interactionToken === "string" &&
-    typeof payload.guildId === "string" &&
-    typeof payload.channelId === "string" &&
-    typeof payload.userId === "string" &&
-    typeof payload.displayName === "string" &&
-    (payload.locale === "ja" || payload.locale === "en" || payload.locale === "ko") &&
-    typeof payload.expiresAt === "number" &&
-    Number.isFinite(payload.expiresAt)
-  );
+function serializeSession(payload: DiscordSessionPayload): CompactSession {
+  return [
+    1,
+    payload.mode === "random" ? "r" : "p",
+    payload.applicationId,
+    payload.interactionToken,
+    payload.guildId,
+    payload.channelId,
+    payload.userId,
+    payload.displayName,
+    payload.locale,
+    payload.expiresAt,
+  ];
+}
+
+function deserializeSession(value: unknown): DiscordSessionPayload | null {
+  if (!Array.isArray(value) || value.length !== 10) return null;
+  const [version, mode, applicationId, interactionToken, guildId, channelId, userId, displayName, locale, expiresAt] = value;
+  if (
+    version !== 1 ||
+    (mode !== "r" && mode !== "p") ||
+    typeof applicationId !== "string" ||
+    typeof interactionToken !== "string" ||
+    typeof guildId !== "string" ||
+    typeof channelId !== "string" ||
+    typeof userId !== "string" ||
+    typeof displayName !== "string" ||
+    (locale !== "ja" && locale !== "en" && locale !== "ko") ||
+    typeof expiresAt !== "number" ||
+    !Number.isFinite(expiresAt)
+  ) {
+    return null;
+  }
+
+  return {
+    v: 1,
+    mode: mode === "r" ? "random" : "pro",
+    applicationId,
+    interactionToken,
+    guildId,
+    channelId,
+    userId,
+    displayName,
+    locale,
+    expiresAt,
+  };
 }
 
 export async function sealDiscordSession(payload: DiscordSessionPayload, secret: string): Promise<string> {
   const key = await importSessionKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  const plaintext = encoder.encode(JSON.stringify(payload));
+  const plaintext = encoder.encode(JSON.stringify(serializeSession(payload)));
   const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext));
   const token = new Uint8Array(iv.length + encrypted.length);
   token.set(iv, 0);
@@ -67,8 +110,7 @@ export async function openDiscordSession(token: string, secret: string): Promise
     const ciphertext = bytes.slice(IV_LENGTH);
     const key = await importSessionKey(secret);
     const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-    const parsed: unknown = JSON.parse(decoder.decode(plaintext));
-    return isSessionPayload(parsed) ? parsed : null;
+    return deserializeSession(JSON.parse(decoder.decode(plaintext)) as unknown);
   } catch {
     return null;
   }
