@@ -1,160 +1,54 @@
-import { AGENTS } from "@/lib/agents";
+import { AGENTS } from "../agents";
+
+export type RejectedReason = "empty" | "too-long" | "prompt-injection" | "unrelated";
 
 export type RelevanceDecision =
   | { allowed: true; reason: "valorant-signal" | "conversation-follow-up" }
-  | { allowed: false; reason: "empty" | "too-long" | "prompt-injection" | "unrelated" };
+  | { allowed: false; reason: RejectedReason };
 
 interface RelevanceContext {
   hasConversationContext?: boolean;
 }
 
 const MAX_MESSAGE_LENGTH = 1200;
-
 const NORMALIZED_AGENT_NAMES = AGENTS.map((agent) => agent.name.toLocaleLowerCase("en-US"));
 
 const STRONG_VALORANT_TERMS = [
-  "valorant",
-  "ヴァロラント",
-  "valo",
-  "コンペ",
-  "ランクマ",
-  "アンレート",
-  "エージェント",
-  "デュエリスト",
-  "イニシエーター",
-  "コントローラー",
-  "センチネル",
-  "アセント",
-  "バインド",
-  "ヘイヴン",
-  "ヘイブン",
-  "スプリット",
-  "ロータス",
-  "サンセット",
-  "アイスボックス",
-  "ブリーズ",
-  "アビス",
-  "ascent",
-  "bind",
-  "haven",
-  "split",
-  "lotus",
-  "sunset",
-  "icebox",
-  "breeze",
-  "abyss",
-  "iron",
-  "bronze",
-  "silver",
-  "gold",
-  "platinum",
-  "diamond",
-  "ascendant",
-  "immortal",
-  "radiant",
-  "アイアン",
-  "ブロンズ",
-  "シルバー",
-  "ゴールド",
-  "プラチナ",
-  "ダイヤ",
-  "アセンダント",
-  "イモータル",
-  "レディアント",
-  ...NORMALIZED_AGENT_NAMES,
+  "valorant", "ヴァロラント", "valo", "コンペ", "ランクマ", "アンレート", "エージェント",
+  "デュエリスト", "イニシエーター", "コントローラー", "センチネル",
+  "アセント", "バインド", "ヘイヴン", "ヘイブン", "スプリット", "ロータス", "サンセット",
+  "アイスボックス", "ブリーズ", "アビス", "ascent", "bind", "haven", "split", "lotus",
+  "sunset", "icebox", "breeze", "abyss",
+  "iron", "bronze", "silver", "gold", "platinum", "diamond", "ascendant", "immortal", "radiant",
+  "アイアン", "ブロンズ", "シルバー", "ゴールド", "プラチナ", "ダイヤ", "アセンダント",
+  "イモータル", "レディアント", ...NORMALIZED_AGENT_NAMES,
 ];
 
 const COMPOSITION_TERMS = [
-  "構成",
-  "編成",
-  "ピック",
-  "メタ",
-  "オフメタ",
-  "勝率",
-  "使用率",
-  "ピック率",
-  "試合数",
-  "補正",
-  "相性",
-  "代替",
-  "残り枠",
-  "残り2枠",
-  "おすすめ",
-  "野良",
-  "ソロキュー",
-  "フルパ",
-  "3パ",
-  "スリーパ",
-  "役割",
-  "ロール",
-  "攻め",
-  "守り",
-  "セットアップ",
-  "ウルト",
-  "アビリティ",
-  "comp",
-  "composition",
-  "team comp",
-  "win rate",
-  "pick rate",
-  "solo queue",
-  "off meta",
+  "構成", "編成", "ピック", "メタ", "オフメタ", "勝率", "使用率", "ピック率", "試合数",
+  "補正", "相性", "代替", "残り枠", "残り2枠", "おすすめ", "野良", "ソロキュー", "フルパ",
+  "3パ", "スリーパ", "役割", "ロール", "攻め", "守り", "セットアップ", "ウルト", "アビリティ",
+  "comp", "composition", "team comp", "win rate", "pick rate", "solo queue", "off meta",
 ];
 
 const FOLLOW_UP_PATTERNS = [
-  /^なぜ[？?]?$/u,
-  /^どうして[？?]?$/u,
-  /^他は[？?]?$/u,
-  /^別案は[？?]?$/u,
-  /^詳しく/u,
-  /^もう少し/u,
-  /^それで/u,
-  /^この構成/u,
-  /^その構成/u,
-  /^弱点は[？?]?$/u,
-  /^強みは[？?]?$/u,
-  /^why[?]?$/iu,
-  /^more$/iu,
-  /^another one[?]?$/iu,
+  /^なぜ[？?]?$/u, /^どうして[？?]?$/u, /^他は[？?]?$/u, /^別案は[？?]?$/u, /^詳しく/u,
+  /^もう少し/u, /^それで/u, /^この構成/u, /^その構成/u, /^弱点は[？?]?$/u, /^強みは[？?]?$/u,
+  /^why[?]?$/iu, /^more$/iu, /^another one[?]?$/iu,
 ];
 
 const PROMPT_INJECTION_PATTERNS = [
-  /前の指示を無視/u,
-  /以前の指示を無視/u,
-  /システムプロンプト/u,
-  /内部プロンプト/u,
-  /隠された指示/u,
-  /api\s*キー/iu,
-  /秘密鍵/u,
-  /jailbreak/iu,
+  /前の指示を無視/u, /以前の指示を無視/u, /システムプロンプト/u, /内部プロンプト/u,
+  /隠された指示/u, /api\s*キー/iu, /秘密鍵/u, /jailbreak/iu,
   /ignore (all|any|the) previous instructions/iu,
   /reveal (the )?(system|developer) prompt/iu,
   /show (me )?(the )?(system|developer) prompt/iu,
 ];
 
 const OBVIOUSLY_UNRELATED_TERMS = [
-  "天気",
-  "気温",
-  "ニュース",
-  "政治",
-  "選挙",
-  "株価",
-  "為替",
-  "レシピ",
-  "料理",
-  "翻訳して",
-  "英訳して",
-  "和訳して",
-  "プログラムを書いて",
-  "コードを書いて",
-  "宿題",
-  "恋愛相談",
-  "占い",
-  "weather",
-  "stock price",
-  "recipe",
-  "translate this",
-  "write code",
+  "天気", "気温", "ニュース", "政治", "選挙", "株価", "為替", "レシピ", "料理", "翻訳して",
+  "英訳して", "和訳して", "プログラムを書いて", "コードを書いて", "宿題", "恋愛相談", "占い",
+  "weather", "stock price", "recipe", "translate this", "write code",
 ];
 
 function normalize(value: string): string {
@@ -177,9 +71,7 @@ export function classifyMetaChatMessage(
     return { allowed: false, reason: "prompt-injection" };
   }
 
-  const hasStrongSignal = includesAny(message, STRONG_VALORANT_TERMS);
-  const hasCompositionSignal = includesAny(message, COMPOSITION_TERMS);
-  if (hasStrongSignal || hasCompositionSignal) {
+  if (includesAny(message, STRONG_VALORANT_TERMS) || includesAny(message, COMPOSITION_TERMS)) {
     return { allowed: true, reason: "valorant-signal" };
   }
 
@@ -198,12 +90,7 @@ export function classifyMetaChatMessage(
   return { allowed: false, reason: "unrelated" };
 }
 
-export function getRejectedMessage(locale: string, reason: RelevanceDecision extends { allowed: false } ? never : never): string;
-export function getRejectedMessage(locale: string, reason: "empty" | "too-long" | "prompt-injection" | "unrelated"): string;
-export function getRejectedMessage(
-  locale: string,
-  reason: "empty" | "too-long" | "prompt-injection" | "unrelated",
-): string {
+export function getRejectedMessage(locale: string, reason: RejectedReason): string {
   const messages = {
     ja: {
       empty: "相談内容を入力してください。",
