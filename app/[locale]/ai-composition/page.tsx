@@ -26,7 +26,8 @@ const META = {
 export async function generateMetadata({ params }: PageProps<"/[locale]/ai-composition">) {
   const { locale } = await params;
   const meta = META[locale as keyof typeof META] ?? META.en;
-  return buildLocalizedMetadata(locale, { ...meta, path: "ai-composition", robots: { index: false, follow: false } });
+  const metadata = buildLocalizedMetadata(locale, { ...meta, path: "ai-composition" });
+  return { ...metadata, robots: { index: false, follow: false } };
 }
 
 export default async function AiCompositionPage({ params }: PageProps<"/[locale]/ai-composition">) {
