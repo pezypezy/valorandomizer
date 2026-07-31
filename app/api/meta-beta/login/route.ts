@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createMetaBetaSessionToken,
+  getLoginRateLimiter,
   getMetaBetaSecrets,
   META_BETA_COOKIE,
   secureSecretEquals,
@@ -21,13 +22,29 @@ function loginPathFor(returnTo: string): string {
   return `/${locale || "ja"}/meta-beta/login`;
 }
 
+function requestActorKey(request: Request): string {
+  return (
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+  );
+}
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const submittedPassword = formData.get("password");
   const returnTo = safeReturnTo(formData.get("returnTo"));
   const loginPath = loginPathFor(returnTo);
-  const secrets = getMetaBetaSecrets();
 
+  const limiter = getLoginRateLimiter();
+  if (limiter) {
+    const { success } = await limiter.limit({ key: `login:${requestActorKey(request)}` });
+    if (!success) {
+      return NextResponse.redirect(new URL(`${loginPath}?error=rate-limit`, request.url), 303);
+    }
+  }
+
+  const secrets = getMetaBetaSecrets();
   if (!secrets) {
     return NextResponse.redirect(new URL(`${loginPath}?error=configuration`, request.url), 303);
   }
