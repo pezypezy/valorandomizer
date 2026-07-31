@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import {
+  buildAiCacheKey,
+  getCacheablePromptId,
+  getCachedAiResponse,
+  putCachedAiResponse,
+  type AiCacheContext,
+  type MetaLocale,
+} from "@/lib/meta-beta/ai-cache";
+import {
   getChatRateLimiter,
   getD1Database,
   getMetaBetaSession,
   getWorkersAiBinding,
 } from "@/lib/meta-beta/auth";
-import { reserveAiQuota, type AiQuotaReservation } from "@/lib/meta-beta/quota";
+import {
+  getAiQuotaStatus,
+  reserveAiQuota,
+  type AiQuotaReservation,
+} from "@/lib/meta-beta/quota";
 import { classifyMetaChatMessage, getRejectedMessage } from "@/lib/meta-beta/relevance";
 import {
   getMetaStats,
@@ -106,6 +118,27 @@ function localizedFallback(locale: string, stats: MetaStatsResult): string {
   return `${map}・${rank}なら、まずセオリー構成の ${theory.agents.join(" / ")} を推します。補正勝率は${theory.adjustedWinRate.toFixed(1)}%、${theory.matchCount.toLocaleString()}試合です。オフメタ案は ${offMeta.agents.join(" / ")}、野良向けは ${solo.agents.join(" / ")} です。${note}`;
 }
 
+function cacheContext(
+  locale: MetaLocale,
+  map: string,
+  rank: string,
+  message: string,
+  history: ChatMessage[],
+  stats: MetaStatsResult,
+): AiCacheContext | null {
+  if (history.length > 0) return null;
+  const promptId = getCacheablePromptId(locale, message);
+  if (!promptId) return null;
+  return {
+    locale,
+    map,
+    rank,
+    promptId,
+    statsUpdatedAt: stats.source === "sample" ? "sample-v1" : stats.updatedAt,
+    statsSource: stats.source,
+  };
+}
+
 export async function POST(request: Request) {
   const session = await getMetaBetaSession();
   if (!session) {
@@ -122,7 +155,7 @@ export async function POST(request: Request) {
   const message = typeof body.message === "string" ? body.message.trim() : "";
   const map = isAllowedMap(body.map) ? body.map : "Ascent";
   const rank = isAllowedRank(body.rank) ? body.rank : "All";
-  const locale = body.locale === "en" || body.locale === "ko" ? body.locale : "ja";
+  const locale: MetaLocale = body.locale === "en" || body.locale === "ko" ? body.locale : "ja";
   const history = normalizeHistory(body.history);
 
   const limiter = getChatRateLimiter();
@@ -151,6 +184,25 @@ export async function POST(request: Request) {
 
   const db = getD1Database();
   const stats = await getMetaStats(db, map, rank);
+  const cache = cacheContext(locale, map, rank, message, history, stats);
+  if (cache) {
+    try {
+      const reply = await getCachedAiResponse(db, buildAiCacheKey(cache));
+      if (reply) {
+        const quota = await getAiQuotaStatus(db, session.nonce);
+        return NextResponse.json({
+          reply,
+          mode: "cached",
+          usedAi: false,
+          statsSource: stats.source,
+          quota,
+        });
+      }
+    } catch (error) {
+      console.error("Meta beta AI cache lookup failed", error);
+    }
+  }
+
   const ai = getWorkersAiBinding();
   if (!ai) {
     return NextResponse.json({
@@ -226,6 +278,14 @@ export async function POST(request: Request) {
     });
     const reply = extractAiText(result);
     if (!reply) throw new Error("Workers AI returned an empty response");
+
+    if (cache) {
+      try {
+        await putCachedAiResponse(db, cache, reply);
+      } catch (error) {
+        console.error("Meta beta AI cache write failed", error);
+      }
+    }
 
     return NextResponse.json({
       reply,
