@@ -27,8 +27,9 @@
       "name": "META_BETA_CHAT_LIMITER",
       "namespace_id": "21002",
       "simple": {
-        "limit": 4,
-        "period": 60
+        "limit": 3,
+        "period": 60,
+        "mitigation_timeout": 300
       }
     }
   ],
