@@ -2,9 +2,13 @@
 import { default as nextHandler } from "./.open-next/worker.js";
 import { rebuildLatestRecommendationSnapshots } from "./lib/meta-beta/aggregation";
 import type { D1DatabaseBinding } from "./lib/meta-beta/auth";
+import { collectOptInMatches } from "./lib/meta-beta/collection";
+import { RiotValorantApiClient } from "./lib/meta-beta/riot-client";
 
 interface WorkerEnv {
   DB?: D1DatabaseBinding;
+  RIOT_API_KEY?: string;
+  RIOT_VAL_BASE_URL?: string;
 }
 
 interface ScheduledEventLike {
@@ -30,16 +34,30 @@ export default {
     context: ExecutionContextLike,
   ): Promise<void> {
     if (!env.DB) {
-      console.warn("Scheduled meta aggregation skipped because the DB binding is unavailable");
+      console.warn("Scheduled ranked-meta task skipped because the DB binding is unavailable");
       return;
     }
 
-    if (event.cron !== "0 19 * * *") return;
     const scheduledTime = Number.isFinite(event.scheduledTime) ? event.scheduledTime : Date.now();
-    const rebuild = rebuildLatestRecommendationSnapshots(env.DB, "jp", scheduledTime);
-    context.waitUntil(cleanupOldUsage(env.DB));
-    const result = await rebuild;
-    console.log("Ranked meta recommendation snapshot rebuilt", result);
+    if (event.cron === "17 * * * *") {
+      const apiKey = env.RIOT_API_KEY?.trim();
+      const baseUrl = env.RIOT_VAL_BASE_URL?.trim();
+      if (!apiKey || !baseUrl) {
+        console.warn("Riot collection skipped because RIOT_API_KEY or RIOT_VAL_BASE_URL is missing");
+        return;
+      }
+      const client = new RiotValorantApiClient({ apiKey, baseUrl });
+      const result = await collectOptInMatches(env.DB, client, scheduledTime);
+      console.log("Opt-in VALORANT match collection finished", result);
+      return;
+    }
+
+    if (event.cron === "0 19 * * *") {
+      const rebuild = rebuildLatestRecommendationSnapshots(env.DB, "jp", scheduledTime);
+      context.waitUntil(cleanupOldUsage(env.DB));
+      const result = await rebuild;
+      console.log("Ranked meta recommendation snapshot rebuilt", result);
+    }
   },
 };
 
