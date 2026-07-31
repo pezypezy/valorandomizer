@@ -1,11 +1,12 @@
 const encoder = new TextEncoder();
 
 function hexToArrayBuffer(value: string): ArrayBuffer | null {
-  if (!/^[0-9a-f]+$/i.test(value) || value.length % 2 !== 0) return null;
-  const buffer = new ArrayBuffer(value.length / 2);
+  const normalized = value.trim();
+  if (!/^[0-9a-f]+$/i.test(normalized) || normalized.length % 2 !== 0) return null;
+  const buffer = new ArrayBuffer(normalized.length / 2);
   const bytes = new Uint8Array(buffer);
   for (let i = 0; i < bytes.length; i += 1) {
-    bytes[i] = Number.parseInt(value.slice(i * 2, i * 2 + 2), 16);
+    bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
   }
   return buffer;
 }
