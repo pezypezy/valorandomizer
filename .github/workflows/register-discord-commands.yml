@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       application_id:
-        description: Discord Application ID
+        description: Discord Application ID（Developer Portalのコピーボタンから貼り付け）
         required: true
-        default: "15362626911508728094"
         type: string
       guild_id:
         description: Discord test server ID
