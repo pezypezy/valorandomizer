@@ -4,6 +4,7 @@
   "main": "custom-worker.ts",
   "compatibility_date": "2025-08-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "keep_vars": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -28,35 +29,11 @@
       "namespace_id": "21002",
       "simple": {
         "limit": 3,
-        "period": 60,
-        "mitigation_timeout": 300
+        "period": 60
       }
     }
   ],
   "observability": {
     "enabled": true
   }
-  // Secrets required for the private beta:
-  //   wrangler secret put META_BETA_PASSWORD
-  //   wrangler secret put META_BETA_AUTH_SECRET
-  //   wrangler secret put RIOT_API_KEY
-  //
-  // Set RIOT_VAL_BASE_URL as a non-secret Worker variable after Riot confirms
-  // the routing host for the approved VALORANT application.
-  //
-  // After creating the D1 database, add its generated UUID here and remove
-  // the comment markers. The SQL files under migrations/ can then be applied
-  // with: wrangler d1 migrations apply valorandomizer --remote
-  //
-  // "d1_databases": [
-  //   {
-  //     "binding": "DB",
-  //     "database_name": "valorandomizer",
-  //     "database_id": "<generated-d1-database-id>",
-  //     "migrations_dir": "migrations"
-  //   }
-  // ],
-  // "vars": {
-  //   "RIOT_VAL_BASE_URL": "https://<approved-routing-host>"
-  // }
 }
