@@ -5,6 +5,8 @@ export const META_BETA_COOKIE = "valorandomizer_meta_beta";
 const SESSION_VERSION = 1;
 const DEFAULT_SESSION_SECONDS = 60 * 60 * 24 * 7;
 
+type D1Value = string | number | null;
+
 export interface WorkersAiBinding {
   run(model: string, input: Record<string, unknown>): Promise<unknown>;
 }
@@ -13,15 +15,38 @@ export interface RateLimitBinding {
   limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
+export interface D1Result<T = Record<string, unknown>> {
+  success?: boolean;
+  results?: T[];
+  meta?: {
+    changes?: number;
+    rows_read?: number;
+    rows_written?: number;
+  };
+}
+
+export interface D1PreparedStatement {
+  bind(...values: D1Value[]): D1PreparedStatement;
+  first<T = Record<string, unknown>>(columnName?: string): Promise<T | null>;
+  all<T = Record<string, unknown>>(): Promise<D1Result<T>>;
+  run<T = Record<string, unknown>>(): Promise<D1Result<T>>;
+}
+
+export interface D1DatabaseBinding {
+  prepare(query: string): D1PreparedStatement;
+  batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
+}
+
 interface MetaBetaEnv {
   META_BETA_PASSWORD?: string;
   META_BETA_AUTH_SECRET?: string;
   AI?: WorkersAiBinding;
+  DB?: D1DatabaseBinding;
   META_BETA_LOGIN_LIMITER?: RateLimitBinding;
   META_BETA_CHAT_LIMITER?: RateLimitBinding;
 }
 
-interface SessionPayload {
+export interface MetaBetaSession {
   v: number;
   exp: number;
   nonce: string;
@@ -99,7 +124,7 @@ export async function createMetaBetaSessionToken(
   authSecret: string,
   maxAgeSeconds = DEFAULT_SESSION_SECONDS,
 ): Promise<string> {
-  const payload: SessionPayload = {
+  const payload: MetaBetaSession = {
     v: SESSION_VERSION,
     exp: Math.floor(Date.now() / 1000) + maxAgeSeconds,
     nonce: crypto.randomUUID(),
@@ -110,9 +135,12 @@ export async function createMetaBetaSessionToken(
   return `${encodedPayload}.${toBase64Url(new Uint8Array(signature))}`;
 }
 
-export async function verifyMetaBetaSessionToken(token: string, authSecret: string): Promise<boolean> {
+export async function readMetaBetaSessionToken(
+  token: string,
+  authSecret: string,
+): Promise<MetaBetaSession | null> {
   const [encodedPayload, encodedSignature, ...extra] = token.split(".");
-  if (!encodedPayload || !encodedSignature || extra.length > 0) return false;
+  if (!encodedPayload || !encodedSignature || extra.length > 0) return null;
 
   try {
     const key = await importHmacKey(authSecret);
@@ -122,26 +150,47 @@ export async function verifyMetaBetaSessionToken(token: string, authSecret: stri
       fromBase64Url(encodedSignature),
       encoder.encode(encodedPayload),
     );
-    if (!signatureValid) return false;
+    if (!signatureValid) return null;
 
-    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(encodedPayload))) as SessionPayload;
-    return payload.v === SESSION_VERSION && Number.isFinite(payload.exp) && payload.exp > Date.now() / 1000;
+    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(encodedPayload))) as MetaBetaSession;
+    if (
+      payload.v !== SESSION_VERSION ||
+      !Number.isFinite(payload.exp) ||
+      payload.exp <= Date.now() / 1000 ||
+      typeof payload.nonce !== "string" ||
+      payload.nonce.length < 16
+    ) {
+      return null;
+    }
+    return payload;
   } catch {
-    return false;
+    return null;
   }
 }
 
-export async function isMetaBetaAuthenticated(): Promise<boolean> {
+export async function verifyMetaBetaSessionToken(token: string, authSecret: string): Promise<boolean> {
+  return (await readMetaBetaSessionToken(token, authSecret)) !== null;
+}
+
+export async function getMetaBetaSession(): Promise<MetaBetaSession | null> {
   const secrets = getMetaBetaSecrets();
-  if (!secrets) return false;
+  if (!secrets) return null;
   const cookieStore = await cookies();
   const token = cookieStore.get(META_BETA_COOKIE)?.value;
-  if (!token) return false;
-  return verifyMetaBetaSessionToken(token, secrets.authSecret);
+  if (!token) return null;
+  return readMetaBetaSessionToken(token, secrets.authSecret);
+}
+
+export async function isMetaBetaAuthenticated(): Promise<boolean> {
+  return (await getMetaBetaSession()) !== null;
 }
 
 export function getWorkersAiBinding(): WorkersAiBinding | null {
   return getMetaBetaEnv().AI ?? null;
+}
+
+export function getD1Database(): D1DatabaseBinding | null {
+  return getMetaBetaEnv().DB ?? null;
 }
 
 export function getLoginRateLimiter(): RateLimitBinding | null {
