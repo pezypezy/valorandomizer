@@ -29,7 +29,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Validate Bot Token secret
         shell: bash
@@ -47,3 +47,9 @@ jobs:
           DISCORD_GUILD_ID: ${{ inputs.guild_id }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: node scripts/register-discord-commands.mjs
+
+      - name: Verify Discord application, public key, and guild commands
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ inputs.guild_id }}
+        run: node scripts/verify-discord-application.mjs
