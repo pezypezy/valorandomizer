@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import { routing } from "./i18n/routing";
 
 const withNextIntl = createNextIntlPlugin();
@@ -25,9 +26,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// Binding emulation is only needed by `next dev`. Avoid opening a remote
+// Cloudflare session during a normal `next build` or CI validation run.
+if (process.env.NODE_ENV === "development") {
+  initOpenNextCloudflareForDev();
+}
 
-// Enables Cloudflare bindings (D1, etc.) when running `next dev` locally.
-// No-op outside the OpenNext dev runtime.
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
-initOpenNextCloudflareForDev();
+export default withNextIntl(nextConfig);

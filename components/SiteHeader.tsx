@@ -27,6 +27,10 @@ export function SiteHeader() {
             Pro
           </Link>
           <span className="text-[var(--color-line)]">/</span>
+          <Link href="/meta-beta" className="transition-colors hover:text-[var(--color-ink)]">
+            Meta <span className="text-[var(--color-primary)]">β</span>
+          </Link>
+          <span className="text-[var(--color-line)]">/</span>
           <Link href="/legal" className="transition-colors hover:text-[var(--color-ink)]">
             Legal
           </Link>

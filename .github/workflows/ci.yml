@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "agent/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      # Existing picker files currently fail newly enabled React 19 lint rules.
+      # Keep this PR strict for every file it adds or changes without hiding that baseline debt.
+      - run: pnpm exec eslint 'app/[locale]/meta-beta' 'app/[locale]/legal/page.tsx' app/api/meta-beta components/meta components/SiteHeader.tsx lib/meta-beta 'lib/meta-beta-*.test.ts' custom-worker.ts
+      - run: pnpm cf:build
+      - run: pnpm exec wrangler deploy --dry-run --outdir .wrangler-dry-run
