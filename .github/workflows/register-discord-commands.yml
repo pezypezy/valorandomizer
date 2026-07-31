@@ -1,0 +1,50 @@
+name: Register Discord commands
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_id:
+        description: Discord Application ID
+        required: true
+        default: "15362626911508728094"
+        type: string
+      guild_id:
+        description: Discord test server ID
+        required: true
+        default: "1148945042510196806"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    name: Register guild commands
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate Bot Token secret
+        shell: bash
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          if [ -z "$DISCORD_BOT_TOKEN" ]; then
+            echo "::error::Repository secret DISCORD_BOT_TOKEN is not configured."
+            exit 1
+          fi
+
+      - name: Register /valorandom and /valopropick
+        env:
+          DISCORD_APPLICATION_ID: ${{ inputs.application_id }}
+          DISCORD_GUILD_ID: ${{ inputs.guild_id }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: node scripts/register-discord-commands.mjs
