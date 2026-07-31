@@ -8,9 +8,16 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "ai": {
+    "binding": "AI"
+  },
   "observability": {
     "enabled": true
   }
+  // Secrets required for the private beta:
+  //   wrangler secret put META_BETA_PASSWORD
+  //   wrangler secret put META_BETA_AUTH_SECRET
+  //
   // Phase 2: add a D1 binding here, e.g.
   // "d1_databases": [
   //   { "binding": "DB", "database_name": "valorandomizer", "database_id": "<id>" }
