@@ -64,6 +64,22 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   }
 }
 
+function describeSessionError(error: unknown) {
+  const name = error instanceof Error ? error.name : "NonError";
+  const message = error instanceof Error ? error.message : String(error);
+  const stack = error instanceof Error ? error.stack ?? "" : "";
+  const normalized = message.toLowerCase();
+
+  let code = "SESSION_UNKNOWN";
+  if (normalized.includes("at least 32 characters")) code = "SESSION_SECRET_SHORT";
+  else if (normalized.includes("timed out")) code = "SESSION_TIMEOUT";
+  else if (normalized.includes("url is too long")) code = "SESSION_URL_LONG";
+  else if (name.toLowerCase().includes("operationerror")) code = "SESSION_CRYPTO_OPERATION";
+  else if (name.toLowerCase().includes("not supported")) code = "SESSION_CRYPTO_UNSUPPORTED";
+
+  return { name, message, stack, code };
+}
+
 const COPY = {
   ja: {
     random: "Webでランダム構成を作成してください。リンクは約14分で期限切れになります。",
@@ -72,8 +88,7 @@ const COPY = {
     denied: "このDiscordサーバーではまだ利用できません。",
     invalid: "このコマンドは利用できません。",
     notConfigured: "Discord連携のセッション用シークレットが未設定です。",
-    sessionFailed:
-      "一時リンクの生成に失敗しました。CloudflareのDISCORD_SESSION_SECRETを32文字以上で設定し直してください。",
+    sessionFailed: "一時リンクの生成に失敗しました。管理者がCloudflareログを確認しています。",
   },
   en: {
     random: "Create the random composition on the web. This link expires in about 14 minutes.",
@@ -82,8 +97,7 @@ const COPY = {
     denied: "This Discord server is not allowed yet.",
     invalid: "This command is not available.",
     notConfigured: "The Discord session secret is not configured.",
-    sessionFailed:
-      "The temporary link could not be generated. Reset DISCORD_SESSION_SECRET in Cloudflare to at least 32 characters.",
+    sessionFailed: "The temporary link could not be generated. The administrator is checking Cloudflare logs.",
   },
   ko: {
     random: "웹에서 랜덤 조합을 만들어 주세요. 링크는 약 14분 후 만료됩니다.",
@@ -92,8 +106,7 @@ const COPY = {
     denied: "이 Discord 서버에서는 아직 사용할 수 없습니다.",
     invalid: "이 명령어는 사용할 수 없습니다.",
     notConfigured: "Discord 세션 시크릿이 설정되지 않았습니다.",
-    sessionFailed:
-      "임시 링크를 생성하지 못했습니다. Cloudflare의 DISCORD_SESSION_SECRET을 32자 이상으로 다시 설정해 주세요.",
+    sessionFailed: "임시 링크를 생성하지 못했습니다. 관리자가 Cloudflare 로그를 확인하고 있습니다.",
   },
 } as const;
 
@@ -174,7 +187,12 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Failed to create Discord web session", error);
-    return ephemeral(copy.sessionFailed);
+    const details = describeSessionError(error);
+    console.error(
+      `Failed to create Discord web session [${details.code}] ${details.name}: ${details.message}${
+        details.stack ? `\n${details.stack}` : ""
+      }`,
+    );
+    return ephemeral(`${copy.sessionFailed} 診断コード: ${details.code}`);
   }
 }
