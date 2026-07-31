@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "node --import tsx --test lib/*.test.ts",
     "agents:sync": "tsx scripts/fetch-agents.ts",
+    "discord:register": "node scripts/register-discord-commands.mjs",
     "cf:build": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
