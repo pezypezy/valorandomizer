@@ -11,6 +11,9 @@
   "ai": {
     "binding": "AI"
   },
+  "vars": {
+    "RIOT_RSO_COLLECTION_ENABLED": "false"
+  },
   "triggers": {
     "crons": ["17 * * * *", "0 19 * * *"]
   },
@@ -40,8 +43,10 @@
   //   wrangler secret put META_BETA_AUTH_SECRET
   //   wrangler secret put RIOT_API_KEY
   //
-  // Set RIOT_VAL_BASE_URL as a non-secret Worker variable after Riot confirms
-  // the routing host for the approved VALORANT application.
+  // Only after Riot approves the Production application and RSO flow:
+  //   1. add RIOT_VAL_BASE_URL to vars using the approved routing host;
+  //   2. change RIOT_RSO_COLLECTION_ENABLED to "true";
+  //   3. register only RSO-opted-in accounts.
   //
   // After creating the D1 database, add its generated UUID here and remove
   // the comment markers. The SQL files under migrations/ can then be applied
@@ -54,8 +59,5 @@
   //     "database_id": "<generated-d1-database-id>",
   //     "migrations_dir": "migrations"
   //   }
-  // ],
-  // "vars": {
-  //   "RIOT_VAL_BASE_URL": "https://<approved-routing-host>"
-  // }
+  // ]
 }
