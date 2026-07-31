@@ -9,10 +9,16 @@ export interface WorkersAiBinding {
   run(model: string, input: Record<string, unknown>): Promise<unknown>;
 }
 
+export interface RateLimitBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 interface MetaBetaEnv {
   META_BETA_PASSWORD?: string;
   META_BETA_AUTH_SECRET?: string;
   AI?: WorkersAiBinding;
+  META_BETA_LOGIN_LIMITER?: RateLimitBinding;
+  META_BETA_CHAT_LIMITER?: RateLimitBinding;
 }
 
 interface SessionPayload {
@@ -131,4 +137,12 @@ export async function isMetaBetaAuthenticated(): Promise<boolean> {
 
 export function getWorkersAiBinding(): WorkersAiBinding | null {
   return getMetaBetaEnv().AI ?? null;
+}
+
+export function getLoginRateLimiter(): RateLimitBinding | null {
+  return getMetaBetaEnv().META_BETA_LOGIN_LIMITER ?? null;
+}
+
+export function getChatRateLimiter(): RateLimitBinding | null {
+  return getMetaBetaEnv().META_BETA_CHAT_LIMITER ?? null;
 }
