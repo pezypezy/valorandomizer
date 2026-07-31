@@ -5,12 +5,13 @@ export interface DiscordSessionPayload {
   mode: DiscordCommandMode;
   applicationId: string;
   interactionToken: string;
-  guildId: string;
-  channelId: string;
   userId: string;
-  displayName: string;
   locale: "ja" | "en" | "ko";
   expiresAt: number;
+  // Legacy v1 links may still contain these fields until they expire.
+  guildId?: string;
+  channelId?: string;
+  displayName?: string;
 }
 
 export type DiscordRandomResult = {
