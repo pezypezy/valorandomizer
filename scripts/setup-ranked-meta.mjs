@@ -1,14 +1,37 @@
+import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import process from "node:process";
-import { spawnSync } from "node:child_process";
 
 const MINIMUM_PASSWORD_LENGTH = 12;
+const PROJECT_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const WRANGLER_CONFIG = new URL("../wrangler.jsonc", import.meta.url);
 const packageManager = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const flags = new Set(process.argv.slice(2));
 const skipSecrets = flags.has("--skip-secrets");
 const deployAfterSetup = flags.has("--deploy");
+
+function printHelp() {
+  console.log(`Valorandomizer ranked-meta Cloudflare setup
+
+Usage:
+  pnpm meta:setup
+  pnpm meta:setup -- --skip-secrets
+  pnpm meta:setup -- --deploy
+
+Options:
+  --skip-secrets  Create/bind D1 and apply migrations without setting Worker secrets.
+  --deploy        Run the project deploy command after setup.
+  --help          Show this help without contacting Cloudflare.
+
+Environment variables:
+  META_BETA_PASSWORD     Optional non-interactive shared password (12+ characters).
+  META_BETA_AUTH_SECRET  Optional session-signing secret; generated when omitted.
+  RIOT_API_KEY           Optional Riot production key; live collection stays off when omitted.
+  CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID may be used instead of wrangler login.
+`);
+}
 
 function fail(message) {
   console.error(`\n[ranked-meta setup] ${message}`);
@@ -18,7 +41,7 @@ function fail(message) {
 function run(command, args, options = {}) {
   console.log(`\n> ${command} ${args.join(" ")}`);
   const result = spawnSync(command, args, {
-    cwd: new URL("..", import.meta.url),
+    cwd: PROJECT_ROOT,
     stdio: options.input === undefined ? "inherit" : ["pipe", "inherit", "inherit"],
     input: options.input,
     encoding: "utf8",
@@ -117,6 +140,11 @@ function putSecret(name, value) {
 }
 
 async function main() {
+  if (flags.has("--help") || flags.has("-h")) {
+    printHelp();
+    return;
+  }
+
   const nodeMajor = Number.parseInt(process.versions.node.split(".")[0], 10);
   if (!Number.isFinite(nodeMajor) || nodeMajor < 22) {
     fail(`Node.js 22 or newer is required. Current version: ${process.version}`);
@@ -148,6 +176,7 @@ async function main() {
   runWrangler(["d1", "migrations", "apply", "valorandomizer", "--remote"]);
 
   if (!skipSecrets) {
+    console.log("\nCloudflare secret updates create a new Worker version. Local code is deployed only when --deploy is supplied.");
     const password = await readHidden("Shared beta password (12+ characters): ");
     if (password.length < MINIMUM_PASSWORD_LENGTH) {
       fail(`The shared password must contain at least ${MINIMUM_PASSWORD_LENGTH} characters.`);
