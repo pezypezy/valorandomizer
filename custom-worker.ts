@@ -20,9 +20,12 @@ interface ExecutionContextLike {
   waitUntil(promise: Promise<unknown>): void;
 }
 
-async function cleanupOldUsage(db: D1DatabaseBinding): Promise<void> {
-  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  await db.prepare("DELETE FROM ai_usage_daily WHERE usage_date < ?").bind(cutoff).run();
+async function cleanupOperationalData(db: D1DatabaseBinding, now = Date.now()): Promise<void> {
+  const cutoff = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  await db.batch([
+    db.prepare("DELETE FROM ai_usage_daily WHERE usage_date < ?").bind(cutoff),
+    db.prepare("DELETE FROM ai_response_cache WHERE expires_at <= ?").bind(Math.floor(now / 1000)),
+  ]);
 }
 
 const worker = {
@@ -54,7 +57,7 @@ const worker = {
 
     if (event.cron === "0 19 * * *") {
       const rebuild = rebuildLatestRecommendationSnapshots(env.DB, "jp", scheduledTime);
-      context.waitUntil(cleanupOldUsage(env.DB));
+      context.waitUntil(cleanupOperationalData(env.DB, scheduledTime));
       const result = await rebuild;
       console.log("Ranked meta recommendation snapshot rebuilt", result);
     }
