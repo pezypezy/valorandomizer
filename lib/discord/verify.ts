@@ -1,12 +1,13 @@
 const encoder = new TextEncoder();
 
-function hexToBytes(value: string): Uint8Array | null {
+function hexToArrayBuffer(value: string): ArrayBuffer | null {
   if (!/^[0-9a-f]+$/i.test(value) || value.length % 2 !== 0) return null;
-  const bytes = new Uint8Array(value.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
+  const buffer = new ArrayBuffer(value.length / 2);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.length; i += 1) {
     bytes[i] = Number.parseInt(value.slice(i * 2, i * 2 + 2), 16);
   }
-  return bytes;
+  return buffer;
 }
 
 export async function verifyDiscordRequest(
@@ -17,9 +18,9 @@ export async function verifyDiscordRequest(
 ): Promise<boolean> {
   if (!signatureHex || !timestamp) return false;
 
-  const signature = hexToBytes(signatureHex);
-  const publicKey = hexToBytes(publicKeyHex);
-  if (!signature || !publicKey || publicKey.length !== 32) return false;
+  const signature = hexToArrayBuffer(signatureHex);
+  const publicKey = hexToArrayBuffer(publicKeyHex);
+  if (!signature || !publicKey || publicKey.byteLength !== 32) return false;
 
   try {
     const key = await crypto.subtle.importKey("raw", publicKey, { name: "Ed25519" }, false, ["verify"]);
