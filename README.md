@@ -10,6 +10,7 @@ five-agent squad — with real agent portraits and a sci-fi UI.
 - **Tailwind CSS v4** (CSS-first `@theme` tokens)
 - **next-intl v4** for i18n (`ja` default / `en` / `ko`), routed via `app/[locale]`
 - **Cloudflare Workers** via `@opennextjs/cloudflare`
+- **Cloudflare D1** for ranked-meta snapshots and AI usage accounting
 - **Cloudflare Workers AI** for the private composition adviser
 - **motion** (framer-motion) + custom arwes-style frames / glow / scanlines
 - **pnpm**
@@ -28,7 +29,7 @@ Other scripts:
 
 ```bash
 pnpm build         # production build
-pnpm test          # unit tests for picker and chat relevance filtering
+pnpm test          # unit tests for picker, relevance filtering, stats, and quota logic
 pnpm agents:sync   # re-fetch the agent roster + portraits into public/agents and lib/agents.ts
 pnpm cf:build      # build for Cloudflare Workers
 pnpm deploy        # deploy through OpenNext / Wrangler
@@ -44,14 +45,16 @@ The password-protected beta lives at:
 /ko/meta-beta
 ```
 
-It currently contains:
+It contains:
 
 - map and rank filters;
-- sample cards for theory, off-meta, and solo-queue-friendly compositions;
+- theory, off-meta, and solo-queue-friendly recommendation cards;
 - a shared-password login using a seven-day signed `HttpOnly` cookie;
 - Workers AI chat with a deterministic fallback when the AI binding is unavailable;
 - a token-free relevance filter that rejects unrelated questions and prompt-injection attempts before any model call;
-- Cloudflare rate limiting for login and chat requests.
+- Cloudflare rate limiting for login and chat requests;
+- D1-backed recommendation snapshots with a sample-data fallback;
+- daily AI limits of 150 requests for the whole group and 20 requests per browser session.
 
 ### Required secrets
 
@@ -70,24 +73,50 @@ Workers AI is bound as `AI` in `wrangler.jsonc` and currently uses:
 @cf/zai-org/glm-4.7-flash
 ```
 
-If Workers AI is unavailable or reaches an error, the chat returns a rule-based explanation from the sample recommendation data instead of breaking the page.
+Unrelated messages are rejected before the Workers AI call and do not consume AI quota. If Workers AI is unavailable or returns an error, the chat returns a rule-based explanation from the current recommendation dataset instead of breaking the page.
 
-The current numbers are intentionally marked as sample data. The next phase replaces them with D1-backed, current-patch, rolling seven-day Riot match statistics.
+### D1 setup
+
+Create the database:
+
+```bash
+wrangler d1 create valorandomizer
+```
+
+Copy the generated `database_id` into the commented `d1_databases` block in `wrangler.jsonc`, then apply migrations:
+
+```bash
+wrangler d1 migrations apply valorandomizer --local
+wrangler d1 migrations apply valorandomizer --remote
+```
+
+The schema under `migrations/` includes:
+
+- normalized match and team-result rows;
+- daily composition statistics;
+- recommendation snapshots;
+- global and per-session AI usage counters.
+
+Until three recommendation rows exist for the selected map and rank, `/api/meta-beta/stats` intentionally returns clearly marked sample data. The dashboard switches automatically to `D1 snapshot` after real rows are available.
+
+The AI allowance follows Workers AI's daily reset boundary at `00:00 UTC`, which is `09:00 JST`. Usage counters use the same UTC date key so the UI and provider reset together.
 
 ## How it works
 
 - `lib/roles.ts` — role definitions, accent palette, the `Agent` type, team size (5).
 - `lib/agents.ts` — **auto-generated** roster (`pnpm agents:sync`). Do not edit by hand.
 - `lib/picker.ts` — pure `pickTeam()` / `validateCounts()` (Fisher–Yates, role-aware, supports locked agents).
-- `lib/meta-beta/` — private beta authentication, relevance filtering, and sample recommendation data.
-- `app/api/meta-beta/` — password login/logout and guarded Workers AI chat endpoints.
+- `lib/meta-beta/auth.ts` — password session signing and Cloudflare binding access.
+- `lib/meta-beta/relevance.ts` — token-free scope and prompt-injection filter.
+- `lib/meta-beta/stats.ts` — D1 recommendation lookup with sample fallback.
+- `lib/meta-beta/quota.ts` — D1-backed daily AI allowance reservation and status.
+- `app/api/meta-beta/` — login/logout, stats, quota, and guarded Workers AI endpoints.
 - `components/meta/MetaBetaDashboard.tsx` — the private ranked-meta dashboard and chat UI.
 - `scripts/fetch-agents.ts` — downloads real portraits/icons into `public/agents/<id>/` for offline-safe serving.
 
 ## Roadmap
 
-- **Meta data phase** — Cloudflare **D1** for normalized match/team rows, daily composition aggregates, and recommendation snapshots.
-- **Riot data phase** — current-patch, rolling seven-day collection with map/rank filters and outlier correction.
+- **Riot data phase** — current-patch, rolling seven-day collection with map/rank filters and duplicate prevention.
 - **Recommendation phase** — production theory, off-meta, and solo-queue scores with sample-size and role-balance guards.
 - **Expansion phase** — Japan-first release, then existing language regions, then worldwide coverage.
 
