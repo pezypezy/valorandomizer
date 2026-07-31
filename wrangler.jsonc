@@ -12,10 +12,6 @@
   "ai": {
     "binding": "AI"
   },
-  "vars": {
-    "DISCORD_PUBLIC_KEY": "8ce8db912030ffaa557cd860487c472bcf94ced82b65f83f647a155f4cef0f9e",
-    "DISCORD_ALLOWED_GUILD_ID": "1148945042510196806"
-  },
   "triggers": {
     "crons": ["17 * * * *", "0 19 * * *"]
   },
