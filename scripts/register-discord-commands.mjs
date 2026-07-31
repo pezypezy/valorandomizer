@@ -16,7 +16,6 @@ const commands = [
       ko: "Valorandomizer를 열고 결과를 이 채널에 게시합니다",
     },
     type: 1,
-    dm_permission: false,
   },
   {
     name: "valopropick",
@@ -26,7 +25,6 @@ const commands = [
       ko: "Valorandomizer에서 프로 조합을 추첨하고 이 채널에 게시합니다",
     },
     type: 1,
-    dm_permission: false,
   },
 ];
 
