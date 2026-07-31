@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 
 const SESSION_TTL_MS = 14 * 60 * 1000;
 const EPHEMERAL = 1 << 6;
+const SESSION_GENERATION_TIMEOUT_MS = 1200;
+const MAX_BUTTON_URL_LENGTH = 512;
 
 type DiscordUser = {
   id: string;
@@ -49,6 +51,19 @@ function resolveMode(command?: string): DiscordCommandMode | null {
   return null;
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("Discord session generation timed out")), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
 const COPY = {
   ja: {
     random: "Webでランダム構成を作成してください。リンクは約14分で期限切れになります。",
@@ -57,6 +72,8 @@ const COPY = {
     denied: "このDiscordサーバーではまだ利用できません。",
     invalid: "このコマンドは利用できません。",
     notConfigured: "Discord連携のセッション用シークレットが未設定です。",
+    sessionFailed:
+      "一時リンクの生成に失敗しました。CloudflareのDISCORD_SESSION_SECRETを32文字以上で設定し直してください。",
   },
   en: {
     random: "Create the random composition on the web. This link expires in about 14 minutes.",
@@ -65,6 +82,8 @@ const COPY = {
     denied: "This Discord server is not allowed yet.",
     invalid: "This command is not available.",
     notConfigured: "The Discord session secret is not configured.",
+    sessionFailed:
+      "The temporary link could not be generated. Reset DISCORD_SESSION_SECRET in Cloudflare to at least 32 characters.",
   },
   ko: {
     random: "웹에서 랜덤 조합을 만들어 주세요. 링크는 약 14분 후 만료됩니다.",
@@ -73,6 +92,8 @@ const COPY = {
     denied: "이 Discord 서버에서는 아직 사용할 수 없습니다.",
     invalid: "이 명령어는 사용할 수 없습니다.",
     notConfigured: "Discord 세션 시크릿이 설정되지 않았습니다.",
+    sessionFailed:
+      "임시 링크를 생성하지 못했습니다. Cloudflare의 DISCORD_SESSION_SECRET을 32자 이상으로 다시 설정해 주세요.",
   },
 } as const;
 
@@ -98,8 +119,6 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "Invalid JSON" }, 400);
   }
 
-  // Discord validates the endpoint with a signed PING. This handshake only
-  // requires the public key; the session secret is needed for commands later.
   if (interaction.type === 1) return jsonResponse({ type: 1 });
   if (interaction.type !== 2) return ephemeral("Unsupported interaction type.");
 
@@ -131,20 +150,31 @@ export async function POST(request: Request) {
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
 
-  const token = await sealDiscordSession(session, env.DISCORD_SESSION_SECRET);
-  const url = `${SITE_URL}/${locale}/discord/${encodeURIComponent(token)}`;
+  try {
+    const token = await withTimeout(
+      sealDiscordSession(session, env.DISCORD_SESSION_SECRET),
+      SESSION_GENERATION_TIMEOUT_MS,
+    );
+    const url = `${SITE_URL}/${locale}/discord/${encodeURIComponent(token)}`;
+    if (url.length > MAX_BUTTON_URL_LENGTH) {
+      throw new Error(`Discord session URL is too long (${url.length} characters)`);
+    }
 
-  return jsonResponse({
-    type: 4,
-    data: {
-      content: mode === "random" ? copy.random : copy.pro,
-      flags: EPHEMERAL,
-      components: [
-        {
-          type: 1,
-          components: [{ type: 2, style: 5, label: copy.button, url }],
-        },
-      ],
-    },
-  });
+    return jsonResponse({
+      type: 4,
+      data: {
+        content: mode === "random" ? copy.random : copy.pro,
+        flags: EPHEMERAL,
+        components: [
+          {
+            type: 1,
+            components: [{ type: 2, style: 5, label: copy.button, url }],
+          },
+        ],
+      },
+    });
+  } catch (error) {
+    console.error("Failed to create Discord web session", error);
+    return ephemeral(copy.sessionFailed);
+  }
 }
