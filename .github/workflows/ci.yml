@@ -25,8 +25,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - run: node --check scripts/setup-ranked-meta.mjs
+      - run: node scripts/setup-ranked-meta.mjs --help
       # Existing picker files currently fail newly enabled React 19 lint rules.
-      # Keep this PR strict for every file it adds or changes without hiding that baseline debt.
-      - run: pnpm exec eslint 'app/[locale]/meta-beta' 'app/[locale]/legal/page.tsx' app/api/meta-beta components/meta components/SiteHeader.tsx lib/meta-beta 'lib/meta-beta-*.test.ts' custom-worker.ts
+      # Keep ranked-meta changes strict without hiding that baseline debt.
+      - run: pnpm exec eslint 'app/[locale]/meta-beta' 'app/[locale]/legal/page.tsx' app/api/meta-beta components/meta lib/meta-beta 'lib/meta-beta-*.test.ts' custom-worker.ts scripts/setup-ranked-meta.mjs
       - run: pnpm cf:build
       - run: pnpm exec wrangler deploy --dry-run --outdir .wrangler-dry-run
