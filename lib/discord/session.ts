@@ -55,7 +55,7 @@ function codeToLocale(code: number): DiscordSessionPayload["locale"] | null {
   return null;
 }
 
-function serializeSession(payload: DiscordSessionPayload): Uint8Array {
+function serializeSession(payload: DiscordSessionPayload): ArrayBuffer {
   if (!/^\d+$/.test(payload.applicationId) || !/^\d+$/.test(payload.userId)) {
     throw new Error("Discord session contains an invalid snowflake ID");
   }
@@ -71,7 +71,7 @@ function serializeSession(payload: DiscordSessionPayload): Uint8Array {
   view.setBigUint64(10, BigInt(payload.userId), false);
   view.setBigUint64(18, BigInt(Math.trunc(payload.expiresAt)), false);
   bytes.set(interactionToken, BINARY_HEADER_LENGTH);
-  return bytes;
+  return bytes.buffer;
 }
 
 function deserializeBinarySession(bytes: Uint8Array): DiscordSessionPayload | null {
