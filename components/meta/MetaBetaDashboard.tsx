@@ -244,17 +244,14 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<UiChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(false);
   const [stats, setStats] = useState<MetaStatsResult | null>(null);
   const [quota, setQuota] = useState<AiQuotaStatus | null>(null);
   const fallbackRecommendations = useMemo(() => getMockRecommendations(map, rank), [map, rank]);
-  const recommendations = stats?.dataScope.map === map && stats.dataScope.rank === rank
-    ? stats.recommendations
-    : fallbackRecommendations;
+  const currentStats = stats?.dataScope.map === map && stats.dataScope.rank === rank ? stats : null;
+  const recommendations = currentStats?.recommendations ?? fallbackRecommendations;
 
   useEffect(() => {
     let cancelled = false;
-    setStatsLoading(true);
     fetch(`/api/meta-beta/stats?map=${encodeURIComponent(map)}&rank=${encodeURIComponent(rank)}`)
       .then(async (response) => {
         if (response.status === 401) {
@@ -266,10 +263,7 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
       .then((result) => {
         if (!cancelled && result) setStats(result);
       })
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setStatsLoading(false);
-      });
+      .catch(() => undefined);
     return () => { cancelled = true; };
   }, [language, map, rank, router]);
 
@@ -332,14 +326,14 @@ export function MetaBetaDashboard({ locale }: MetaBetaDashboardProps) {
   }
 
   const quotaExhausted = quota?.configured && (quota.globalRemaining === 0 || quota.sessionRemaining === 0);
-  const sourceIsLive = stats?.source === "d1";
-  const sourceLabel = statsLoading ? copy.loading : sourceIsLive ? copy.live : copy.sample;
-  const updatedLabel = stats
+  const sourceIsLive = currentStats?.source === "d1";
+  const sourceLabel = currentStats ? (sourceIsLive ? copy.live : copy.sample) : copy.loading;
+  const updatedLabel = currentStats
     ? new Intl.DateTimeFormat(language === "en" ? "en-US" : language === "ko" ? "ko-KR" : "ja-JP", {
         timeZone: "Asia/Tokyo",
         dateStyle: "short",
         timeStyle: "short",
-      }).format(new Date(stats.updatedAt))
+      }).format(new Date(currentStats.updatedAt))
     : null;
 
   return (
