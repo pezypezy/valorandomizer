@@ -24,13 +24,16 @@ export async function verifyDiscordRequest(
 
   try {
     const key = await crypto.subtle.importKey("raw", publicKey, { name: "Ed25519" }, false, ["verify"]);
-    return crypto.subtle.verify(
+    return await crypto.subtle.verify(
       { name: "Ed25519" },
       key,
       signature,
       encoder.encode(`${timestamp}${body}`),
     );
-  } catch {
+  } catch (error) {
+    const name = error instanceof Error ? error.name : "NonError";
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Discord signature verification failed ${name}: ${message}`);
     return false;
   }
 }
