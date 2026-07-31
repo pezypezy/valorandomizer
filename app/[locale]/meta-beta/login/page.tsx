@@ -19,6 +19,7 @@ const COPY = {
     placeholder: "パスワードを入力",
     submit: "ログイン",
     invalid: "パスワードが違います。グループ内で共有された文字列を確認してください。",
+    rateLimit: "短時間にログインを試しすぎています。1分ほど待ってから再試行してください。",
     configuration: "認証用Secretが未設定です。Cloudflare側でMETA_BETA_PASSWORDとMETA_BETA_AUTH_SECRETを設定してください。",
     note: "ログイン状態はこのブラウザで7日間維持されます。パスワードはURLやフロントコードには保存されません。",
   },
@@ -30,6 +31,7 @@ const COPY = {
     placeholder: "Enter password",
     submit: "Sign in",
     invalid: "That password is incorrect. Check the value shared with the group.",
+    rateLimit: "Too many login attempts. Wait about a minute before trying again.",
     configuration: "Authentication secrets are missing. Configure META_BETA_PASSWORD and META_BETA_AUTH_SECRET in Cloudflare.",
     note: "The session lasts seven days in this browser. The password is never stored in the URL or client code.",
   },
@@ -41,6 +43,7 @@ const COPY = {
     placeholder: "비밀번호 입력",
     submit: "로그인",
     invalid: "비밀번호가 올바르지 않습니다. 그룹에서 공유한 값을 확인해 주세요.",
+    rateLimit: "짧은 시간에 로그인을 너무 많이 시도했습니다. 약 1분 후 다시 시도해 주세요.",
     configuration: "인증 Secret이 설정되지 않았습니다. Cloudflare에서 META_BETA_PASSWORD와 META_BETA_AUTH_SECRET을 설정해 주세요.",
     note: "로그인 상태는 이 브라우저에서 7일간 유지됩니다. 비밀번호는 URL이나 클라이언트 코드에 저장되지 않습니다.",
   },
@@ -61,6 +64,12 @@ export default async function MetaBetaLoginPage({
   const language = locale === "en" || locale === "ko" ? locale : "ja";
   const copy = COPY[language];
   const error = typeof query.error === "string" ? query.error : null;
+  const errorMessage =
+    error === "configuration"
+      ? copy.configuration
+      : error === "rate-limit"
+        ? copy.rateLimit
+        : copy.invalid;
 
   return (
     <div className="mx-auto flex min-h-[68vh] max-w-xl items-center py-10">
@@ -71,7 +80,7 @@ export default async function MetaBetaLoginPage({
 
         {error ? (
           <p className="mt-5 rounded-lg border border-[var(--color-primary)]/50 bg-[var(--color-primary)]/10 px-4 py-3 text-sm">
-            {error === "configuration" ? copy.configuration : copy.invalid}
+            {errorMessage}
           </p>
         ) : null}
 
