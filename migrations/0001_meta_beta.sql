@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS daily_comp_stats (
   adjusted_win_rate REAL NOT NULL,
   confidence_lower REAL NOT NULL,
   pick_rate REAL NOT NULL,
+  average_agent_pick_rate REAL NOT NULL DEFAULT 0,
   eligible_for_recommendation INTEGER NOT NULL CHECK (eligible_for_recommendation IN (0, 1)),
   updated_at INTEGER NOT NULL,
   PRIMARY KEY (stat_date, region, patch, map_id, rank_bucket, comp_key)
