@@ -41,12 +41,15 @@ export default async function DiscordSessionPage({ params }: DiscordSessionPageP
     );
   }
 
+  const displayName = session.displayName
+    ?? (locale === "ja" ? "Discordユーザー" : locale === "ko" ? "Discord 사용자" : "Discord user");
+
   return (
     <DiscordSessionPicker
       token={token}
       mode={session.mode}
       locale={session.locale}
-      displayName={session.displayName}
+      displayName={displayName}
       expiresAt={session.expiresAt}
     />
   );
