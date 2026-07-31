@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getWorkersAiBinding, isMetaBetaAuthenticated } from "@/lib/meta-beta/auth";
+import {
+  getChatRateLimiter,
+  getWorkersAiBinding,
+  isMetaBetaAuthenticated,
+  META_BETA_COOKIE,
+} from "@/lib/meta-beta/auth";
 import { getMockRecommendations, META_MAPS, META_RANKS } from "@/lib/meta-beta/mock-data";
 import { classifyMetaChatMessage, getRejectedMessage } from "@/lib/meta-beta/relevance";
 
@@ -52,6 +57,25 @@ function extractAiText(result: unknown): string | null {
   return typeof choiceContent === "string" ? choiceContent.trim() || null : null;
 }
 
+function cookieValue(request: Request, name: string): string | null {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) return null;
+  for (const pair of cookieHeader.split(";")) {
+    const separator = pair.indexOf("=");
+    if (separator < 0) continue;
+    if (pair.slice(0, separator).trim() === name) {
+      return pair.slice(separator + 1).trim();
+    }
+  }
+  return null;
+}
+
+function localizedRateLimit(locale: string): string {
+  if (locale === "en") return "Too many requests in a short period. Wait a moment and try again.";
+  if (locale === "ko") return "짧은 시간에 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+  return "短時間の相談回数が多すぎます。少し待ってからもう一度試してください。";
+}
+
 function localizedFallback(locale: string, map: string, rank: string): string {
   const recommendations = getMockRecommendations(map, rank);
   const theory = recommendations.find((item) => item.category === "theory") ?? recommendations[0];
@@ -84,6 +108,20 @@ export async function POST(request: Request) {
   const rank = isAllowedRank(body.rank) ? body.rank : "All";
   const locale = body.locale === "en" || body.locale === "ko" ? body.locale : "ja";
   const history = normalizeHistory(body.history);
+
+  const limiter = getChatRateLimiter();
+  if (limiter) {
+    const sessionToken = cookieValue(request, META_BETA_COOKIE);
+    const actor = sessionToken?.slice(0, 96) ?? request.headers.get("cf-connecting-ip") ?? "unknown";
+    const { success } = await limiter.limit({ key: `chat:${actor}` });
+    if (!success) {
+      return NextResponse.json(
+        { reply: localizedRateLimit(locale), mode: "rejected", usedAi: false, reason: "rate-limit" },
+        { status: 429 },
+      );
+    }
+  }
+
   const relevance = classifyMetaChatMessage(message, {
     hasConversationContext: history.length > 0,
   });
