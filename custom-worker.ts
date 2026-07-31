@@ -9,6 +9,7 @@ interface WorkerEnv {
   DB?: D1DatabaseBinding;
   RIOT_API_KEY?: string;
   RIOT_VAL_BASE_URL?: string;
+  RIOT_RSO_COLLECTION_ENABLED?: string;
 }
 
 interface ScheduledEventLike {
@@ -43,6 +44,10 @@ const worker = {
 
     const scheduledTime = Number.isFinite(event.scheduledTime) ? event.scheduledTime : Date.now();
     if (event.cron === "17 * * * *") {
+      if (env.RIOT_RSO_COLLECTION_ENABLED?.trim().toLocaleLowerCase("en-US") !== "true") {
+        console.log("Riot collection skipped because approved RSO collection is not enabled");
+        return;
+      }
       const apiKey = env.RIOT_API_KEY?.trim();
       const baseUrl = env.RIOT_VAL_BASE_URL?.trim();
       if (!apiKey || !baseUrl) {
@@ -51,7 +56,7 @@ const worker = {
       }
       const client = new RiotValorantApiClient({ apiKey, baseUrl });
       const result = await collectOptInMatches(env.DB, client, scheduledTime);
-      console.log("Opt-in VALORANT match collection finished", result);
+      console.log("RSO-opted-in VALORANT match collection finished", result);
       return;
     }
 
