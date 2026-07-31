@@ -56,7 +56,6 @@ const COPY = {
     button: "Webで構成を作る",
     denied: "このDiscordサーバーではまだ利用できません。",
     invalid: "このコマンドは利用できません。",
-    notConfigured: "Discord連携のセッション用シークレットが未設定です。",
   },
   en: {
     random: "Create the random composition on the web. This link expires in about 14 minutes.",
@@ -64,7 +63,6 @@ const COPY = {
     button: "Create on the web",
     denied: "This Discord server is not allowed yet.",
     invalid: "This command is not available.",
-    notConfigured: "The Discord session secret is not configured.",
   },
   ko: {
     random: "웹에서 랜덤 조합을 만들어 주세요. 링크는 약 14분 후 만료됩니다.",
@@ -72,14 +70,13 @@ const COPY = {
     button: "웹에서 조합 만들기",
     denied: "이 Discord 서버에서는 아직 사용할 수 없습니다.",
     invalid: "이 명령어는 사용할 수 없습니다.",
-    notConfigured: "Discord 세션 시크릿이 설정되지 않았습니다.",
   },
 } as const;
 
 export async function POST(request: Request) {
   const env = getDiscordEnv();
-  if (!env.DISCORD_PUBLIC_KEY) {
-    return jsonResponse({ error: "Discord public key is not configured" }, 500);
+  if (!env.DISCORD_PUBLIC_KEY || !env.DISCORD_SESSION_SECRET) {
+    return jsonResponse({ error: "Discord integration is not configured" }, 500);
   }
 
   const body = await request.text();
@@ -98,15 +95,11 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "Invalid JSON" }, 400);
   }
 
-  // Discord validates the endpoint with a signed PING. This handshake only
-  // requires the public key; the session secret is needed for commands later.
   if (interaction.type === 1) return jsonResponse({ type: 1 });
   if (interaction.type !== 2) return ephemeral("Unsupported interaction type.");
 
   const locale = resolveLocale(interaction.locale);
   const copy = COPY[locale];
-  if (!env.DISCORD_SESSION_SECRET) return ephemeral(copy.notConfigured);
-
   const mode = resolveMode(interaction.data?.name);
   if (!mode) return ephemeral(copy.invalid);
 
