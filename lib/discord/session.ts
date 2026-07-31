@@ -4,8 +4,10 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const IV_LENGTH = 12;
 const MAX_TOKEN_LENGTH = 1024;
+const BINARY_VERSION = 2;
+const BINARY_HEADER_LENGTH = 26;
 
-type CompactSession = [
+type LegacyCompactSession = [
   1,
   "r" | "p",
   string,
@@ -40,24 +42,66 @@ async function importSessionKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
-function serializeSession(payload: DiscordSessionPayload): CompactSession {
-  return [
-    1,
-    payload.mode === "random" ? "r" : "p",
-    payload.applicationId,
-    payload.interactionToken,
-    payload.guildId,
-    payload.channelId,
-    payload.userId,
-    payload.displayName,
-    payload.locale,
-    payload.expiresAt,
-  ];
+function localeToCode(locale: DiscordSessionPayload["locale"]): number {
+  if (locale === "ja") return 0;
+  if (locale === "ko") return 2;
+  return 1;
 }
 
-function deserializeSession(value: unknown): DiscordSessionPayload | null {
+function codeToLocale(code: number): DiscordSessionPayload["locale"] | null {
+  if (code === 0) return "ja";
+  if (code === 1) return "en";
+  if (code === 2) return "ko";
+  return null;
+}
+
+function serializeSession(payload: DiscordSessionPayload): ArrayBuffer {
+  if (!/^\d+$/.test(payload.applicationId) || !/^\d+$/.test(payload.userId)) {
+    throw new Error("Discord session contains an invalid snowflake ID");
+  }
+
+  const interactionToken = encoder.encode(payload.interactionToken);
+  const bytes = new Uint8Array(BINARY_HEADER_LENGTH + interactionToken.length);
+  const view = new DataView(bytes.buffer);
+  const flags = (payload.mode === "pro" ? 1 : 0) | (localeToCode(payload.locale) << 1);
+
+  bytes[0] = BINARY_VERSION;
+  bytes[1] = flags;
+  view.setBigUint64(2, BigInt(payload.applicationId), false);
+  view.setBigUint64(10, BigInt(payload.userId), false);
+  view.setBigUint64(18, BigInt(Math.trunc(payload.expiresAt)), false);
+  bytes.set(interactionToken, BINARY_HEADER_LENGTH);
+  return bytes.buffer;
+}
+
+function deserializeBinarySession(bytes: Uint8Array): DiscordSessionPayload | null {
+  if (bytes.length <= BINARY_HEADER_LENGTH || bytes[0] !== BINARY_VERSION) return null;
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const flags = bytes[1];
+  const locale = codeToLocale((flags >> 1) & 0b11);
+  if (!locale || (flags & 0b11111000) !== 0) return null;
+
+  const interactionToken = decoder.decode(bytes.slice(BINARY_HEADER_LENGTH));
+  if (!interactionToken) return null;
+
+  const expiresAtBigInt = view.getBigUint64(18, false);
+  if (expiresAtBigInt > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+
+  return {
+    v: 1,
+    mode: (flags & 1) === 1 ? "pro" : "random",
+    applicationId: view.getBigUint64(2, false).toString(),
+    interactionToken,
+    userId: view.getBigUint64(10, false).toString(),
+    locale,
+    expiresAt: Number(expiresAtBigInt),
+  };
+}
+
+function deserializeLegacySession(value: unknown): DiscordSessionPayload | null {
   if (!Array.isArray(value) || value.length !== 10) return null;
-  const [version, mode, applicationId, interactionToken, guildId, channelId, userId, displayName, locale, expiresAt] = value;
+  const [version, mode, applicationId, interactionToken, guildId, channelId, userId, displayName, locale, expiresAt] = value as LegacyCompactSession;
   if (
     version !== 1 ||
     (mode !== "r" && mode !== "p") ||
@@ -88,10 +132,21 @@ function deserializeSession(value: unknown): DiscordSessionPayload | null {
   };
 }
 
+function deserializeSession(plaintext: ArrayBuffer): DiscordSessionPayload | null {
+  const bytes = new Uint8Array(plaintext);
+  if (bytes[0] === BINARY_VERSION) return deserializeBinarySession(bytes);
+
+  try {
+    return deserializeLegacySession(JSON.parse(decoder.decode(bytes)) as unknown);
+  } catch {
+    return null;
+  }
+}
+
 export async function sealDiscordSession(payload: DiscordSessionPayload, secret: string): Promise<string> {
   const key = await importSessionKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  const plaintext = encoder.encode(JSON.stringify(serializeSession(payload)));
+  const plaintext = serializeSession(payload);
   const encrypted = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext));
   const token = new Uint8Array(iv.length + encrypted.length);
   token.set(iv, 0);
@@ -110,7 +165,7 @@ export async function openDiscordSession(token: string, secret: string): Promise
     const ciphertext = bytes.slice(IV_LENGTH);
     const key = await importSessionKey(secret);
     const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-    return deserializeSession(JSON.parse(decoder.decode(plaintext)) as unknown);
+    return deserializeSession(plaintext);
   } catch {
     return null;
   }

@@ -13,6 +13,8 @@ type PublishRequest = {
 
 type DiscordMessageResponse = {
   id?: string;
+  guild_id?: string;
+  channel_id?: string;
 };
 
 function isPublishResult(value: unknown): value is DiscordPublishResult {
@@ -70,8 +72,10 @@ export async function POST(request: Request) {
   }
 
   const posted = (await discordResponse.json()) as DiscordMessageResponse;
-  const messageUrl = posted.id
-    ? `https://discord.com/channels/${session.guildId}/${session.channelId}/${posted.id}`
+  const guildId = posted.guild_id ?? session.guildId;
+  const channelId = posted.channel_id ?? session.channelId;
+  const messageUrl = posted.id && guildId && channelId
+    ? `https://discord.com/channels/${guildId}/${channelId}/${posted.id}`
     : null;
 
   return NextResponse.json({ ok: true, messageUrl });

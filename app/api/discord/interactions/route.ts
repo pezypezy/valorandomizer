@@ -12,7 +12,7 @@ const SIGNATURE_VERIFICATION_TIMEOUT_MS = 1000;
 const SESSION_GENERATION_TIMEOUT_MS = 1200;
 const MAX_BUTTON_URL_LENGTH = 512;
 const EPHEMERAL = 1 << 6;
-const DEPLOYMENT_MARKER = "discord-stage-v1";
+const DEPLOYMENT_MARKER = "discord-stage-v2";
 
 type DiscordUser = {
   id: string;
@@ -185,10 +185,7 @@ export async function POST(request: Request) {
     mode,
     applicationId: interaction.application_id,
     interactionToken: interaction.token,
-    guildId: interaction.guild_id,
-    channelId: interaction.channel_id,
     userId: user.id,
-    displayName: interaction.member?.nick || user.global_name || user.username,
     locale,
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
@@ -205,7 +202,7 @@ export async function POST(request: Request) {
     }
 
     console.info(
-      `Discord interaction stage=response-ready marker=${DEPLOYMENT_MARKER} mode=${mode} urlLength=${url.length}`,
+      `Discord interaction stage=response-ready marker=${DEPLOYMENT_MARKER} mode=${mode} interactionTokenLength=${interaction.token.length} sessionTokenLength=${token.length} urlLength=${url.length}`,
     );
     return jsonResponse({
       type: 4,
