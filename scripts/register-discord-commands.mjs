@@ -1,9 +1,32 @@
-const applicationId = process.env.DISCORD_APPLICATION_ID;
-const botToken = process.env.DISCORD_BOT_TOKEN;
-const guildId = process.env.DISCORD_GUILD_ID;
+const applicationId = process.env.DISCORD_APPLICATION_ID?.trim();
+const botToken = process.env.DISCORD_BOT_TOKEN?.trim();
+const guildId = process.env.DISCORD_GUILD_ID?.trim();
 
 if (!applicationId || !botToken || !guildId) {
   console.error("DISCORD_APPLICATION_ID, DISCORD_BOT_TOKEN, and DISCORD_GUILD_ID are required.");
+  process.exit(1);
+}
+
+const MAX_SNOWFLAKE = 9223372036854775807n;
+function isValidSnowflake(value) {
+  if (!/^\d{17,19}$/.test(value)) return false;
+  try {
+    const parsed = BigInt(value);
+    return parsed > 0n && parsed <= MAX_SNOWFLAKE;
+  } catch {
+    return false;
+  }
+}
+
+if (!isValidSnowflake(applicationId)) {
+  console.error(
+    "Invalid Discord Application ID. Copy it directly from Developer Portal > General Information > Application ID.",
+  );
+  process.exit(1);
+}
+
+if (!isValidSnowflake(guildId)) {
+  console.error("Invalid Discord Guild ID. Copy the server ID again with Discord developer mode enabled.");
   process.exit(1);
 }
 
