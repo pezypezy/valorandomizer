@@ -8,9 +8,11 @@ import { SITE_URL } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 
 const SESSION_TTL_MS = 14 * 60 * 1000;
+const SIGNATURE_VERIFICATION_TIMEOUT_MS = 1000;
 const SESSION_GENERATION_TIMEOUT_MS = 1200;
 const MAX_BUTTON_URL_LENGTH = 512;
 const EPHEMERAL = 1 << 6;
+const DEPLOYMENT_MARKER = "discord-stage-v1";
 
 type DiscordUser = {
   id: string;
@@ -51,10 +53,10 @@ function resolveMode(command?: string): DiscordCommandMode | null {
   return null;
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error("Discord session generation timed out")), timeoutMs);
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
   });
 
   try {
@@ -112,32 +114,60 @@ const COPY = {
 
 export async function POST(request: Request) {
   const env = getDiscordEnv();
+  const signatureHeader = request.headers.get("x-signature-ed25519");
+  const timestampHeader = request.headers.get("x-signature-timestamp");
+
+  console.info(
+    `Discord interaction stage=start marker=${DEPLOYMENT_MARKER} publicKeyLength=${env.DISCORD_PUBLIC_KEY?.length ?? 0} signatureLength=${signatureHeader?.length ?? 0} hasTimestamp=${Boolean(timestampHeader)}`,
+  );
+
   if (!env.DISCORD_PUBLIC_KEY) {
+    console.error("Discord interaction rejected [PUBLIC_KEY_MISSING]");
     return jsonResponse({ error: "Discord public key is not configured" }, 500);
   }
 
   const body = await request.text();
-  const verified = await verifyDiscordRequest(
-    body,
-    request.headers.get("x-signature-ed25519"),
-    request.headers.get("x-signature-timestamp"),
-    env.DISCORD_PUBLIC_KEY,
-  );
-  if (!verified) return jsonResponse({ error: "Invalid request signature" }, 401);
+  let verified = false;
+  try {
+    verified = await withTimeout(
+      verifyDiscordRequest(body, signatureHeader, timestampHeader, env.DISCORD_PUBLIC_KEY),
+      SIGNATURE_VERIFICATION_TIMEOUT_MS,
+      "Discord signature verification timed out",
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Discord interaction rejected [SIGNATURE_TIMEOUT] ${message}`);
+    return jsonResponse({ error: "Signature verification timed out" }, 503);
+  }
+
+  if (!verified) {
+    console.warn(
+      `Discord interaction rejected [SIGNATURE_INVALID] publicKeyLength=${env.DISCORD_PUBLIC_KEY.length} signatureLength=${signatureHeader?.length ?? 0} bodyLength=${body.length}`,
+    );
+    return jsonResponse({ error: "Invalid request signature" }, 401);
+  }
+  console.info(`Discord interaction stage=signature-verified marker=${DEPLOYMENT_MARKER}`);
 
   let interaction: DiscordInteraction;
   try {
     interaction = JSON.parse(body) as DiscordInteraction;
   } catch {
+    console.warn("Discord interaction rejected [INVALID_JSON]");
     return jsonResponse({ error: "Invalid JSON" }, 400);
   }
 
-  if (interaction.type === 1) return jsonResponse({ type: 1 });
+  if (interaction.type === 1) {
+    console.info(`Discord interaction stage=pong marker=${DEPLOYMENT_MARKER}`);
+    return jsonResponse({ type: 1 });
+  }
   if (interaction.type !== 2) return ephemeral("Unsupported interaction type.");
 
   const locale = resolveLocale(interaction.locale);
   const copy = COPY[locale];
-  if (!env.DISCORD_SESSION_SECRET) return ephemeral(copy.notConfigured);
+  if (!env.DISCORD_SESSION_SECRET) {
+    console.warn("Discord interaction rejected [SESSION_SECRET_MISSING]");
+    return ephemeral(copy.notConfigured);
+  }
 
   const mode = resolveMode(interaction.data?.name);
   if (!mode) return ephemeral(copy.invalid);
@@ -167,12 +197,16 @@ export async function POST(request: Request) {
     const token = await withTimeout(
       sealDiscordSession(session, env.DISCORD_SESSION_SECRET),
       SESSION_GENERATION_TIMEOUT_MS,
+      "Discord session generation timed out",
     );
     const url = `${SITE_URL}/${locale}/discord/${encodeURIComponent(token)}`;
     if (url.length > MAX_BUTTON_URL_LENGTH) {
       throw new Error(`Discord session URL is too long (${url.length} characters)`);
     }
 
+    console.info(
+      `Discord interaction stage=response-ready marker=${DEPLOYMENT_MARKER} mode=${mode} urlLength=${url.length}`,
+    );
     return jsonResponse({
       type: 4,
       data: {
