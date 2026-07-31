@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { isMetaBetaAuthenticated } from "@/lib/meta-beta/auth";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ const COPY = {
     rateLimit: "短時間にログインを試しすぎています。1分ほど待ってから再試行してください。",
     configuration: "認証用Secretが未設定です。Cloudflare側でMETA_BETA_PASSWORDとMETA_BETA_AUTH_SECRETを設定してください。",
     note: "ログイン状態はこのブラウザで7日間維持されます。パスワードはURLやフロントコードには保存されません。",
+    privacy: "ベータ版のデータ・プライバシー説明を確認",
   },
   en: {
     eyebrow: "PRIVATE BETA ACCESS",
@@ -34,6 +36,7 @@ const COPY = {
     rateLimit: "Too many login attempts. Wait about a minute before trying again.",
     configuration: "Authentication secrets are missing. Configure META_BETA_PASSWORD and META_BETA_AUTH_SECRET in Cloudflare.",
     note: "The session lasts seven days in this browser. The password is never stored in the URL or client code.",
+    privacy: "Review the beta data and privacy notice",
   },
   ko: {
     eyebrow: "PRIVATE BETA ACCESS",
@@ -46,6 +49,7 @@ const COPY = {
     rateLimit: "짧은 시간에 로그인을 너무 많이 시도했습니다. 약 1분 후 다시 시도해 주세요.",
     configuration: "인증 Secret이 설정되지 않았습니다. Cloudflare에서 META_BETA_PASSWORD와 META_BETA_AUTH_SECRET을 설정해 주세요.",
     note: "로그인 상태는 이 브라우저에서 7일간 유지됩니다. 비밀번호는 URL이나 클라이언트 코드에 저장되지 않습니다.",
+    privacy: "베타 데이터 및 개인정보 안내 확인",
   },
 } as const;
 
@@ -86,9 +90,7 @@ export default async function MetaBetaLoginPage({
 
         <form action="/api/meta-beta/login" method="post" className="mt-7">
           <input type="hidden" name="returnTo" value={`/${language}/meta-beta`} />
-          <label htmlFor="meta-beta-password" className="text-sm font-semibold">
-            {copy.password}
-          </label>
+          <label htmlFor="meta-beta-password" className="text-sm font-semibold">{copy.password}</label>
           <input
             id="meta-beta-password"
             name="password"
@@ -107,6 +109,9 @@ export default async function MetaBetaLoginPage({
         </form>
 
         <p className="mt-5 text-xs leading-5 text-[var(--color-muted)]">{copy.note}</p>
+        <Link href="/meta-beta/privacy" className="mt-3 inline-block text-xs font-semibold text-[var(--color-primary)] hover:underline">
+          {copy.privacy}
+        </Link>
       </section>
     </div>
   );
