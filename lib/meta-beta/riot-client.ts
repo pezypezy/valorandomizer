@@ -9,6 +9,17 @@ export interface RiotMatchlistResponse {
   history: RiotMatchlistEntry[];
 }
 
+export interface RiotContentMap {
+  id: string;
+  name: string;
+  assetName?: string;
+}
+
+export interface RiotContentResponse {
+  version?: string;
+  maps: RiotContentMap[];
+}
+
 export interface RiotApiClientOptions {
   baseUrl: string;
   apiKey: string;
@@ -50,6 +61,27 @@ function assertMatchlist(value: unknown): RiotMatchlistResponse {
   return { puuid: typeof candidate.puuid === "string" ? candidate.puuid : undefined, history };
 }
 
+function assertContent(value: unknown): RiotContentResponse {
+  if (!value || typeof value !== "object") throw new Error("Invalid Riot content response");
+  const candidate = value as { version?: unknown; maps?: unknown };
+  const maps = Array.isArray(candidate.maps)
+    ? candidate.maps.flatMap((entry): RiotContentMap[] => {
+        if (!entry || typeof entry !== "object") return [];
+        const map = entry as { id?: unknown; name?: unknown; assetName?: unknown };
+        if (typeof map.id !== "string" || typeof map.name !== "string") return [];
+        return [{
+          id: map.id,
+          name: map.name,
+          assetName: typeof map.assetName === "string" ? map.assetName : undefined,
+        }];
+      })
+    : [];
+  return {
+    version: typeof candidate.version === "string" ? candidate.version : undefined,
+    maps,
+  };
+}
+
 export class RiotValorantApiClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
@@ -79,6 +111,11 @@ export class RiotValorantApiClient {
       );
     }
     return response.json();
+  }
+
+  async getContent(locale = "en-US"): Promise<RiotContentResponse> {
+    const result = await this.request(`/val/content/v1/contents?locale=${encodeURIComponent(locale)}`);
+    return assertContent(result);
   }
 
   async getMatchlistByPuuid(puuid: string): Promise<RiotMatchlistResponse> {
