@@ -36,8 +36,16 @@
   //   wrangler secret put META_BETA_PASSWORD
   //   wrangler secret put META_BETA_AUTH_SECRET
   //
-  // Phase 2: add a D1 binding here, e.g.
+  // After creating the D1 database, add its generated UUID here and remove
+  // the comment markers. The SQL files under migrations/ can then be applied
+  // with: wrangler d1 migrations apply valorandomizer --remote
+  //
   // "d1_databases": [
-  //   { "binding": "DB", "database_name": "valorandomizer", "database_id": "<id>" }
+  //   {
+  //     "binding": "DB",
+  //     "database_name": "valorandomizer",
+  //     "database_id": "<generated-d1-database-id>",
+  //     "migrations_dir": "migrations"
+  //   }
   // ]
 }
