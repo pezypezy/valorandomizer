@@ -28,3 +28,18 @@ test("Discord session token rejects tampering", async () => {
   const replacement = token.endsWith("A") ? "B" : "A";
   assert.equal(await openDiscordSession(`${token.slice(0, -1)}${replacement}`, secret), null);
 });
+
+test("Discord session fits within a link button URL", async () => {
+  const realistic: DiscordSessionPayload = {
+    ...payload,
+    applicationId: "1234567890123456789",
+    interactionToken: "x".repeat(100),
+    guildId: "1234567890123456789",
+    channelId: "1234567890123456789",
+    userId: "1234567890123456789",
+    displayName: "A-very-long-discord-display-name",
+  };
+  const token = await sealDiscordSession(realistic, secret);
+  const url = `https://valo-randomizer.com/ja/discord/${token}`;
+  assert.ok(url.length < 512, `URL length was ${url.length}`);
+});
