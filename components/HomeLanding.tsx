@@ -252,7 +252,7 @@ export function HomeLanding({ locale }: { locale: string }) {
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <p className="font-display text-xs font-bold uppercase tracking-[0.35em] text-[var(--color-primary)]">{copy.eyebrow}</p>
-            <h1 className="mt-5 max-w-4xl font-display text-[clamp(3rem,7vw,6.5rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{copy.title}</h1>
+            {language !== "ja" ? <h1 className="mt-5 max-w-4xl font-display text-[clamp(3rem,7vw,6.5rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{copy.title}</h1> : null}
             <p className="mt-6 max-w-2xl text-base leading-8 text-[var(--color-muted)] sm:text-lg">{copy.description}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button type="button" onClick={() => router.push(`/${language}/random-pick`)} className="px-7 py-3">{copy.randomCta}</Button>
