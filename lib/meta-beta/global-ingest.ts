@@ -3,12 +3,15 @@ import { rebuildDailyCompositionStats } from "@/lib/meta-beta/daily-stats";
 import { normalizeRiotMatch, type NormalizedMatch } from "@/lib/meta-beta/normalize-match";
 
 export const GLOBAL_META_REGION = "global";
-export const GLOBAL_RANKED_SHARDS = ["na", "eu", "ap", "kr", "latam", "br"] as const;
+export const GLOBAL_RANKED_ROUTES = ["na", "eu", "ap", "kr", "latam", "br"] as const;
+export const GLOBAL_SHARD_GROUPS = ["americas", "eu", "ap", "kr"] as const;
 
-export type GlobalRankedShard = (typeof GLOBAL_RANKED_SHARDS)[number];
+export type GlobalRankedRoute = (typeof GLOBAL_RANKED_ROUTES)[number];
+export type GlobalShardGroup = (typeof GLOBAL_SHARD_GROUPS)[number];
 
 export interface GlobalRankedMatchEnvelope {
-  shard: GlobalRankedShard;
+  route: GlobalRankedRoute;
+  serverCluster?: string | null;
   payload: unknown;
 }
 
@@ -18,12 +21,19 @@ export interface GlobalRankedBatch {
   matches: GlobalRankedMatchEnvelope[];
 }
 
+export interface NormalizedGlobalRankedMatch {
+  route: GlobalRankedRoute;
+  shardGroup: GlobalShardGroup;
+  serverCluster: string;
+  match: NormalizedMatch;
+}
+
 export interface GlobalBatchNormalizationResult {
   source: string;
   fetchedAt: number;
   payloadMatches: number;
   rejectedMatches: number;
-  matches: Array<{ shard: GlobalRankedShard; match: NormalizedMatch }>;
+  matches: NormalizedGlobalRankedMatch[];
 }
 
 export interface GlobalIngestResult extends GlobalBatchNormalizationResult {
@@ -39,9 +49,28 @@ export interface GlobalBatchNormalizationOptions {
 
 const SOURCE_PATTERN = /^[a-z0-9][a-z0-9._-]{1,63}$/u;
 const DEFAULT_MAXIMUM_MATCHES = 250;
+const UNKNOWN_SERVER_CLUSTER = "unknown";
 
 function jstDateFromEpochSeconds(epochSeconds: number): string {
   return new Date(epochSeconds * 1000 + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export function shardGroupForRoute(route: GlobalRankedRoute): GlobalShardGroup {
+  if (route === "na" || route === "latam" || route === "br") return "americas";
+  return route;
+}
+
+export function normalizeServerCluster(value: unknown): string {
+  if (typeof value !== "string") return UNKNOWN_SERVER_CLUSTER;
+  const normalized = value
+    .trim()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .toLocaleLowerCase("en-US")
+    .replace(/[^a-z0-9]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 64);
+  return normalized || UNKNOWN_SERVER_CLUSTER;
 }
 
 function assertBatch(batch: GlobalRankedBatch, maximumMatches: number): void {
@@ -66,11 +95,11 @@ export function normalizeGlobalRankedBatch(
   const maximumMatches = options.maximumMatches ?? DEFAULT_MAXIMUM_MATCHES;
   assertBatch(batch, maximumMatches);
 
-  const matches: Array<{ shard: GlobalRankedShard; match: NormalizedMatch }> = [];
+  const matches: NormalizedGlobalRankedMatch[] = [];
   let rejectedMatches = 0;
 
   for (const envelope of batch.matches) {
-    if (!GLOBAL_RANKED_SHARDS.includes(envelope.shard)) {
+    if (!GLOBAL_RANKED_ROUTES.includes(envelope.route)) {
       rejectedMatches += 1;
       continue;
     }
@@ -84,7 +113,12 @@ export function normalizeGlobalRankedBatch(
       continue;
     }
 
-    matches.push({ shard: envelope.shard, match: normalized });
+    matches.push({
+      route: envelope.route,
+      shardGroup: shardGroupForRoute(envelope.route),
+      serverCluster: normalizeServerCluster(envelope.serverCluster),
+      match: normalized,
+    });
   }
 
   return {
@@ -106,15 +140,16 @@ async function matchExists(db: D1DatabaseBinding, matchId: string): Promise<bool
 function persistStatements(
   db: D1DatabaseBinding,
   source: string,
-  shard: GlobalRankedShard,
-  match: NormalizedMatch,
+  entry: NormalizedGlobalRankedMatch,
   processedAt: number,
 ): D1PreparedStatement[] {
+  const { route, shardGroup, serverCluster, match } = entry;
   return [
     db.prepare(
       `INSERT OR IGNORE INTO matches
-        (match_id, region, map_id, patch, queue_id, started_at, processed_at, source, source_shard)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (match_id, region, map_id, patch, queue_id, started_at, processed_at,
+         source, source_route, shard_group, server_cluster)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       match.matchId,
       GLOBAL_META_REGION,
@@ -124,7 +159,9 @@ function persistStatements(
       match.startedAt,
       processedAt,
       source,
-      shard,
+      route,
+      shardGroup,
+      serverCluster,
     ),
     ...match.teams.map((team) => db.prepare(
       `INSERT OR IGNORE INTO team_results
@@ -147,16 +184,22 @@ function persistStatements(
     )),
     ...match.teams.map((team) => db.prepare(
       `INSERT INTO global_dataset_coverage
-        (stat_date, source, shard, patch, map_id, rank_bucket, team_count, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-       ON CONFLICT(stat_date, source, shard, patch, map_id, rank_bucket)
+        (stat_date, source, source_route, shard_group, server_cluster,
+         patch, map_id, rank_bucket, team_count, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+       ON CONFLICT(
+         stat_date, source, source_route, shard_group, server_cluster,
+         patch, map_id, rank_bucket
+       )
        DO UPDATE SET
          team_count = global_dataset_coverage.team_count + 1,
          updated_at = excluded.updated_at`,
     ).bind(
       jstDateFromEpochSeconds(match.startedAt),
       source,
-      shard,
+      route,
+      shardGroup,
+      serverCluster,
       match.patch,
       match.mapId,
       team.rankBucket,
@@ -231,7 +274,7 @@ export async function ingestGlobalRankedBatch(
         matchesSkipped += 1;
         continue;
       }
-      await db.batch(persistStatements(db, normalized.source, entry.shard, entry.match, processedAt));
+      await db.batch(persistStatements(db, normalized.source, entry, processedAt));
       matchesInserted += 1;
       touchedDates.add(jstDateFromEpochSeconds(entry.match.startedAt));
     }
