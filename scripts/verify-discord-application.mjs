@@ -36,7 +36,7 @@ if (!Array.isArray(commands)) {
 }
 
 const commandNames = commands.map((command) => command?.name).filter((name) => typeof name === "string");
-for (const required of ["valorandom", "valopropick"]) {
+for (const required of ["valorandom", "valopropick", "aipick"]) {
   if (!commandNames.includes(required)) {
     throw new Error(`Required Discord command /${required} is not registered in guild ${guildId}.`);
   }
