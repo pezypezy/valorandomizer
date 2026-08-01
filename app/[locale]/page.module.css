@@ -4,84 +4,90 @@
 
 @media (min-width: 768px) {
   .landing > :global(div) > :global(section:first-child) {
-    height: clamp(32rem, 58vh, 38rem) !important;
+    height: clamp(35rem, 62vh, 42rem) !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) {
-    padding: 2.5rem 2rem 2rem !important;
+    padding: 2.75rem 2.25rem 2.25rem !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) {
     display: grid !important;
     grid-template-rows: minmax(0, 1fr) auto;
-    gap: 1.75rem !important;
+    gap: 2rem !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:first-child) {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(4.25rem, auto) 2.75rem;
+    align-content: center;
     padding-top: 0 !important;
-    padding-bottom: 1rem;
+    padding-bottom: 1.25rem;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) :global(div:first-child > p:first-child) {
-    font-size: 0.75rem !important;
+    margin: 0 !important;
+    font-size: 0.8125rem !important;
+    line-height: 1rem !important;
     letter-spacing: 0.26em !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) :global(h2) {
-    margin-top: 1.25rem !important;
-    font-size: clamp(3.15rem, 4.15vw, 5.25rem) !important;
+    margin-top: 1.35rem !important;
+    font-size: clamp(3.45rem, 4.45vw, 5.75rem) !important;
     line-height: 0.92 !important;
     letter-spacing: 0.035em !important;
     text-wrap: balance;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) :global(h2 + p) {
-    margin-top: 1.5rem !important;
-    max-width: 34rem !important;
-    font-size: 1rem !important;
-    line-height: 1.75rem !important;
+    margin-top: 1.6rem !important;
+    max-width: 35rem !important;
+    font-size: 1.0625rem !important;
+    line-height: 1.875rem !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) :global(h2 + p + span) {
-    margin-top: 1rem !important;
-    padding: 0.5rem 0.75rem !important;
+    align-self: start;
+    margin-top: 0.9rem !important;
+    padding: 0.55rem 0.8rem !important;
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:last-child) {
     border-top: 1px solid var(--color-line);
-    padding-top: 1.25rem;
+    padding-top: 1.5rem;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:last-child) > :global(span:first-child) {
-    font-size: 0.8125rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
     letter-spacing: 0.14em !important;
     color: var(--color-ink) !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:last-child) > :global(span:last-child) {
-    width: 3rem !important;
-    height: 3rem !important;
+    width: 3.25rem !important;
+    height: 3.25rem !important;
     background: color-mix(in srgb, var(--color-bg-deep) 72%, transparent);
-    font-size: 1.5rem !important;
+    font-size: 1.65rem !important;
   }
 
   .landing > :global(div) > :global(section:nth-of-type(2)) {
     position: relative;
     left: 50%;
-    width: min(calc(100vw - 3rem), 80rem);
+    width: min(calc(100vw - 3rem), 86rem);
     transform: translateX(-50%);
   }
 }
 
 @media (min-width: 1280px) {
   .landing > :global(div) > :global(section:first-child) {
-    height: clamp(34rem, 60vh, 40rem) !important;
+    height: clamp(38rem, 64vh, 46rem) !important;
   }
 
   .landing > :global(div) > :global(section:first-child) > :global(button) {
-    padding: 3rem 2.75rem 2.25rem !important;
+    padding: 3.25rem 3rem 2.75rem !important;
   }
 }
