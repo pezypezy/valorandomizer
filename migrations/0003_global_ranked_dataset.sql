@@ -1,8 +1,10 @@
 ALTER TABLE matches ADD COLUMN source TEXT NOT NULL DEFAULT 'legacy';
-ALTER TABLE matches ADD COLUMN source_shard TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE matches ADD COLUMN source_route TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE matches ADD COLUMN shard_group TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE matches ADD COLUMN server_cluster TEXT NOT NULL DEFAULT 'unknown';
 
 CREATE INDEX IF NOT EXISTS idx_matches_global_source
-  ON matches(region, source, source_shard, started_at);
+  ON matches(region, source, shard_group, server_cluster, started_at);
 
 CREATE TABLE IF NOT EXISTS global_ingest_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,14 +27,21 @@ CREATE INDEX IF NOT EXISTS idx_global_ingest_runs_started
 CREATE TABLE IF NOT EXISTS global_dataset_coverage (
   stat_date TEXT NOT NULL,
   source TEXT NOT NULL,
-  shard TEXT NOT NULL,
+  source_route TEXT NOT NULL,
+  shard_group TEXT NOT NULL,
+  server_cluster TEXT NOT NULL DEFAULT 'unknown',
   patch TEXT NOT NULL,
   map_id TEXT NOT NULL,
   rank_bucket TEXT NOT NULL,
   team_count INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL,
-  PRIMARY KEY (stat_date, source, shard, patch, map_id, rank_bucket)
+  PRIMARY KEY (
+    stat_date, source, source_route, shard_group, server_cluster,
+    patch, map_id, rank_bucket
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_global_dataset_coverage_scope
-  ON global_dataset_coverage(stat_date DESC, shard, rank_bucket, map_id);
+  ON global_dataset_coverage(
+    stat_date DESC, shard_group, server_cluster, rank_bucket, map_id
+  );
