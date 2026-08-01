@@ -24,6 +24,26 @@ test("Riot client calls the documented matchlist path with a server-side token",
   assert.equal(response.history[0].matchId, "match-1");
 });
 
+test("Riot client discovers recent competitive match IDs", async () => {
+  let requestedUrl = "";
+  const client = new RiotValorantApiClient({
+    baseUrl: "https://ap.api.riotgames.com",
+    apiKey: "secret",
+    fetcher: async (input) => {
+      requestedUrl = String(input);
+      return new Response(JSON.stringify({
+        currentTime: 1_775_000_100,
+        matchIds: ["match-1", "match-1", "match-2", 123],
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    },
+  });
+
+  const response = await client.getRecentMatches("competitive");
+  assert.equal(requestedUrl, "https://ap.api.riotgames.com/val/match/v1/recent-matches/by-queue/competitive");
+  assert.equal(response.currentTime, 1_775_000_100);
+  assert.deepEqual(response.matchIds, ["match-1", "match-2"]);
+});
+
 test("Riot client parses content map aliases", async () => {
   const client = new RiotValorantApiClient({
     baseUrl: "https://example.api.riotgames.com",
