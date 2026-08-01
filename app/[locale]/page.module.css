@@ -1,0 +1,87 @@
+.landing {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .landing > :global(div) > :global(section:first-child) {
+    height: clamp(32rem, 58vh, 38rem) !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) {
+    padding: 2.5rem 2rem 2rem !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 1.75rem !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:first-child) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 0 !important;
+    padding-bottom: 1rem;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) :global(div:first-child > p:first-child) {
+    font-size: 0.75rem !important;
+    letter-spacing: 0.26em !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) :global(h2) {
+    margin-top: 1.25rem !important;
+    font-size: clamp(3.15rem, 4.15vw, 5.25rem) !important;
+    line-height: 0.92 !important;
+    letter-spacing: 0.035em !important;
+    text-wrap: balance;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) :global(h2 + p) {
+    margin-top: 1.5rem !important;
+    max-width: 34rem !important;
+    font-size: 1rem !important;
+    line-height: 1.75rem !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) :global(h2 + p + span) {
+    margin-top: 1rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:last-child) {
+    border-top: 1px solid var(--color-line);
+    padding-top: 1.25rem;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:last-child) > :global(span:first-child) {
+    font-size: 0.8125rem !important;
+    letter-spacing: 0.14em !important;
+    color: var(--color-ink) !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) > :global(div.relative) > :global(div:last-child) > :global(span:last-child) {
+    width: 3rem !important;
+    height: 3rem !important;
+    background: color-mix(in srgb, var(--color-bg-deep) 72%, transparent);
+    font-size: 1.5rem !important;
+  }
+
+  .landing > :global(div) > :global(section:nth-of-type(2)) {
+    position: relative;
+    left: 50%;
+    width: min(calc(100vw - 3rem), 80rem);
+    transform: translateX(-50%);
+  }
+}
+
+@media (min-width: 1280px) {
+  .landing > :global(div) > :global(section:first-child) {
+    height: clamp(34rem, 60vh, 40rem) !important;
+  }
+
+  .landing > :global(div) > :global(section:first-child) > :global(button) {
+    padding: 3rem 2.75rem 2.25rem !important;
+  }
+}

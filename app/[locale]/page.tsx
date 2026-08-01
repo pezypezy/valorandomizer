@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { HomeLanding } from "@/components/HomeLanding";
 import { buildLocalizedMetadata } from "@/lib/seo";
+import styles from "./page.module.css";
 
 const META = {
   ja: {
@@ -26,5 +27,9 @@ export async function generateMetadata({ params }: PageProps<"/[locale]">) {
 export default async function Home({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <HomeLanding locale={locale} />;
+  return (
+    <div className={styles.landing}>
+      <HomeLanding locale={locale} />
+    </div>
+  );
 }
