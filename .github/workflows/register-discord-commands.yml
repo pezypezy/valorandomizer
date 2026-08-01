@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-      - name: Register /valorandom and /valopropick
+      - name: Register /valorandom, /valopropick, and /aipick
         env:
           DISCORD_APPLICATION_ID: ${{ inputs.application_id }}
           DISCORD_GUILD_ID: ${{ inputs.guild_id }}
