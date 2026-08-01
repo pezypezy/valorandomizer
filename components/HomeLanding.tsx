@@ -207,7 +207,7 @@ export function HomeLanding({ locale }: { locale: string }) {
 
   return (
     <div className="flex flex-col">
-      <section className="relative left-1/2 grid min-h-[calc(100svh-4rem)] w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:grid-cols-3">
+      <section className="relative left-1/2 grid w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:h-[calc(100svh-11.5rem)] md:min-h-[28rem] md:grid-cols-3">
         <ChoiceCard
           meta={copy.randomMeta}
           title={copy.randomTitle}
@@ -239,10 +239,10 @@ export function HomeLanding({ locale }: { locale: string }) {
         />
       </section>
 
-      <section className="clip-frame mt-10 border border-[var(--color-line)] bg-[var(--color-surface)] p-6 sm:p-8">
+      <section className="clip-frame mt-4 border border-[var(--color-line)] bg-[var(--color-surface)] p-4 sm:p-5 md:grid md:grid-cols-[auto_auto_1fr] md:items-center md:gap-x-6">
         <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)]">SELECT YOUR MODE</p>
-        <h2 className="mt-3 font-display text-2xl font-bold text-[var(--color-ink)] sm:text-3xl">{copy.howTitle}</h2>
-        <p className="mt-4 max-w-4xl text-sm leading-7 text-[var(--color-muted)]">{copy.howBody}</p>
+        <h2 className="mt-2 font-display text-2xl font-bold text-[var(--color-ink)] md:mt-0">{copy.howTitle}</h2>
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-[var(--color-muted)] md:mt-0 md:justify-self-end md:text-right">{copy.howBody}</p>
       </section>
 
       <AnimatePresence>
@@ -330,28 +330,28 @@ function ChoiceCard({
       transition={{ duration: 0.52, delay, ease: [0.16, 1, 0.3, 1] }}
       whileHover={disabled ? undefined : { y: -4 }}
       whileTap={disabled ? undefined : { scale: 0.99 }}
-      className="group relative flex min-h-[30rem] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-7 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-wait disabled:opacity-70 md:min-h-[calc(100svh-4rem)] md:border-b-0 md:border-r md:px-10 md:py-14 lg:px-14 lg:py-16 last:md:border-r-0"
+      className="group relative flex min-h-[30rem] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-7 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-wait disabled:opacity-70 md:h-full md:min-h-0 md:border-b-0 md:border-r md:px-10 md:py-10 lg:px-12 lg:py-12 last:md:border-r-0"
     >
       <div
         className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{ background: `linear-gradient(145deg, ${accent}, transparent 32%)` }}
       />
       <div className="absolute inset-x-0 top-0 h-1" style={{ background: accent }} />
-      <div className="relative flex w-full flex-col justify-between gap-12 self-stretch">
-        <div className="pt-5 md:pt-10">
+      <div className="relative flex w-full flex-col justify-between gap-8 self-stretch">
+        <div className="pt-5 md:pt-4">
           <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-muted)]">{meta}</p>
-          <h2 className="mt-6 break-words font-display text-[clamp(3rem,4.6vw,6rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{title}</h2>
-          <p className="mt-7 max-w-xl text-sm leading-7 text-[var(--color-muted)] sm:text-base">{description}</p>
+          <h2 className="mt-5 break-words font-display text-[clamp(3rem,4.3vw,5rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{title}</h2>
+          <p className="mt-5 max-w-xl text-sm leading-7 text-[var(--color-muted)] sm:text-base">{description}</p>
           {note ? (
-            <span className="mt-6 inline-flex border border-[var(--color-line)] bg-black/20 px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]">
+            <span className="mt-4 inline-flex border border-[var(--color-line)] bg-black/20 px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]">
               🔒 {note}
             </span>
           ) : null}
         </div>
-        <div className="flex items-center justify-between gap-3 pb-2">
+        <div className="flex items-center justify-between gap-3 pb-1">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">{action}</span>
           <span
-            className="flex h-14 w-14 items-center justify-center border border-[var(--color-line)] text-3xl transition-transform group-hover:translate-x-1"
+            className="flex h-12 w-12 items-center justify-center border border-[var(--color-line)] text-2xl transition-transform group-hover:translate-x-1"
             style={{ color: accent }}
             aria-hidden="true"
           >
