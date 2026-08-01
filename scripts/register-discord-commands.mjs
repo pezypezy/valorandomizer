@@ -49,6 +49,15 @@ const commands = [
     },
     type: 1,
   },
+  {
+    name: "aipick",
+    description: "Choose a map and rank, then post three AI composition picks",
+    description_localizations: {
+      ja: "マップとランクを選び、AI構成候補を3つ投稿します",
+      ko: "맵과 랭크를 선택하고 AI 조합 후보 3개를 게시합니다",
+    },
+    type: 1,
+  },
 ];
 
 const endpoint = `https://discord.com/api/v10/applications/${applicationId}/guilds/${guildId}/commands`;
