@@ -9,6 +9,11 @@ export interface RiotMatchlistResponse {
   history: RiotMatchlistEntry[];
 }
 
+export interface RiotRecentMatchesResponse {
+  currentTime: number;
+  matchIds: string[];
+}
+
 export interface RiotContentMap {
   id: string;
   name: string;
@@ -59,6 +64,23 @@ function assertMatchlist(value: unknown): RiotMatchlistResponse {
     Boolean(entry) && typeof entry === "object" && typeof entry.matchId === "string" && entry.matchId.length > 0,
   );
   return { puuid: typeof candidate.puuid === "string" ? candidate.puuid : undefined, history };
+}
+
+function assertRecentMatches(value: unknown): RiotRecentMatchesResponse {
+  if (!value || typeof value !== "object") throw new Error("Invalid Riot recent matches response");
+  const candidate = value as { currentTime?: unknown; matchIds?: unknown };
+  if (!Array.isArray(candidate.matchIds)) {
+    throw new Error("Riot recent matches response has no matchIds array");
+  }
+  const matchIds = [...new Set(candidate.matchIds.filter(
+    (matchId): matchId is string => typeof matchId === "string" && matchId.length > 0,
+  ))];
+  return {
+    currentTime: typeof candidate.currentTime === "number" && Number.isFinite(candidate.currentTime)
+      ? candidate.currentTime
+      : 0,
+    matchIds,
+  };
 }
 
 function assertContent(value: unknown): RiotContentResponse {
@@ -116,6 +138,11 @@ export class RiotValorantApiClient {
   async getContent(locale = "en-US"): Promise<RiotContentResponse> {
     const result = await this.request(`/val/content/v1/contents?locale=${encodeURIComponent(locale)}`);
     return assertContent(result);
+  }
+
+  async getRecentMatches(queue = "competitive"): Promise<RiotRecentMatchesResponse> {
+    const result = await this.request(`/val/match/v1/recent-matches/by-queue/${encodeURIComponent(queue)}`);
+    return assertRecentMatches(result);
   }
 
   async getMatchlistByPuuid(puuid: string): Promise<RiotMatchlistResponse> {
