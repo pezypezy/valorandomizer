@@ -1,9 +1,7 @@
 import type { D1DatabaseBinding, D1PreparedStatement } from "@/lib/meta-beta/auth";
 import {
-  GLOBAL_RANKED_ROUTES,
   ingestGlobalRankedBatch,
   shardGroupForRoute,
-  type GlobalRankedRoute,
 } from "@/lib/meta-beta/global-ingest";
 import { META_MAPS } from "@/lib/meta-beta/mock-data";
 import {
@@ -237,7 +235,7 @@ export async function collectRiotRecentCompetitiveMatches(
       source: "riot-recent-matches",
       fetchedAt: nowSeconds,
       matches: fetched.map(({ route, payload }) => ({
-        route: route as GlobalRankedRoute,
+        route,
         serverCluster: null,
         payload,
       })),
