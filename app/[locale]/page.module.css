@@ -2,6 +2,10 @@
   width: 100%;
 }
 
+.landing > :global(div) > :global(section:nth-of-type(2)) {
+  display: none;
+}
+
 @media (min-width: 768px) {
   .landing > :global(div) > :global(section:first-child) {
     height: clamp(35rem, 62vh, 42rem) !important;
@@ -72,13 +76,6 @@
     height: 3.25rem !important;
     background: color-mix(in srgb, var(--color-bg-deep) 72%, transparent);
     font-size: 1.65rem !important;
-  }
-
-  .landing > :global(div) > :global(section:nth-of-type(2)) {
-    position: relative;
-    left: 50%;
-    width: min(calc(100vw - 3rem), 86rem);
-    transform: translateX(-50%);
   }
 }
 
