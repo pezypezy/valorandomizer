@@ -26,9 +26,10 @@ Options:
   --help          Show this help without contacting Cloudflare.
 
 Environment variables:
-  META_BETA_PASSWORD     Optional non-interactive shared password (12+ characters).
-  META_BETA_AUTH_SECRET  Optional session-signing secret; generated when omitted.
-  RIOT_API_KEY           Optional Riot production key; live collection stays off when omitted.
+  META_BETA_PASSWORD       Optional non-interactive shared password (12+ characters).
+  META_BETA_AUTH_SECRET    Optional session-signing secret; generated when omitted.
+  RIOT_API_KEY             Optional Riot production key; live collection stays off when omitted.
+  RIOT_MATCH_DETAIL_BUDGET Optional per-run detail budget (1-250); configure as a Worker variable.
   CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID may be used instead of wrangler login.
 `);
 }
@@ -191,7 +192,7 @@ async function main() {
     if (riotApiKey) {
       putSecret("RIOT_API_KEY", riotApiKey);
     } else {
-      console.log("\nRIOT_API_KEY was not set. The private beta and sample statistics can run, but live Riot collection remains disabled.");
+      console.log("\nRIOT_API_KEY was not set. The private beta can run, but live global Riot collection remains disabled.");
     }
   } else {
     console.log("\nSkipping Worker secrets because --skip-secrets was supplied.");
@@ -204,8 +205,8 @@ async function main() {
     console.log("Review `git diff -- wrangler.jsonc`, commit the D1 ID, then run `pnpm deploy`.");
   }
 
-  console.log("Private beta URL after deployment: https://valo-randomizer.com/ja/meta-beta");
-  console.log("Live collection additionally requires Riot production access and RIOT_VAL_BASE_URL.");
+  console.log("Private beta URL after deployment: https://valo-randomizer.com/ja/ai-composition");
+  console.log("Live global collection requires Riot production access and the RIOT_API_KEY secret.");
 }
 
 main().catch((error) => fail(error instanceof Error ? error.message : String(error)));

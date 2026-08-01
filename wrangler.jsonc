@@ -13,7 +13,7 @@
     "binding": "AI"
   },
   "triggers": {
-    "crons": ["17 * * * *", "0 19 * * *"]
+    "crons": ["*/10 * * * *", "0 19 * * *"]
   },
   "ratelimits": [
     {
