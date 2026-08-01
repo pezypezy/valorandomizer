@@ -78,10 +78,24 @@ test("rank selection preserves an already selected map", () => {
   );
 });
 
-test("public result includes map, rank and three embeds", () => {
+test("live result includes map, rank and three public embeds", () => {
   const message = buildAiPickDiscordMessage(stats, "123456789012345678", "ja");
+  assert.equal(message.flags, undefined);
   assert.equal(message.embeds.length, 3);
   assert.match(message.content, /Ascent/);
   assert.match(message.content, /ダイヤモンド/);
   assert.deepEqual(message.allowed_mentions.users, ["123456789012345678"]);
+});
+
+test("sample fallback never publishes fake recommendations", () => {
+  const message = buildAiPickDiscordMessage(
+    { ...stats, source: "sample" },
+    "123456789012345678",
+    "ja",
+  );
+  assert.equal(message.flags, 64);
+  assert.equal(message.embeds.length, 0);
+  assert.deepEqual(message.allowed_mentions.users, []);
+  assert.match(message.content, /実データがまだありません/);
+  assert.match(message.content, /サンプル構成は表示せず/);
 });
