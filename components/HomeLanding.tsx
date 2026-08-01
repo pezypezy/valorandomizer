@@ -9,12 +9,6 @@ type Language = "ja" | "en" | "ko";
 type AccessErrorCode = "invalid" | "rate-limit" | "configuration" | "unknown";
 
 type Copy = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  randomCta: string;
-  proCta: string;
-  aiCta: string;
   randomMeta: string;
   randomTitle: string;
   randomDescription: string;
@@ -26,9 +20,6 @@ type Copy = {
   aiDescription: string;
   aiLocked: string;
   select: string;
-  statOne: string;
-  statTwo: string;
-  statThree: string;
   howTitle: string;
   howBody: string;
   loginEyebrow: string;
@@ -47,12 +38,6 @@ type Copy = {
 
 const COPY: Record<Language, Copy> = {
   ja: {
-    eyebrow: "VALORANT COMPOSITION TOOLKIT",
-    title: "遊ぶ構成も、勝ちにいく構成も。",
-    description: "ランダム構成、過去のプロ構成、ランク統計を使ったAI構成相談を、ひとつの場所から選べます。",
-    randomCta: "Random Pickを使う",
-    proCta: "Pro Pickを使う",
-    aiCta: "AI構成を使う",
     randomMeta: "ROLE BASED",
     randomTitle: "RANDOM PICK",
     randomDescription: "ロール人数を指定して5人構成を生成。固定と個別の振り直しにも対応します。",
@@ -64,9 +49,6 @@ const COPY: Record<Language, Copy> = {
     aiDescription: "現パッチ・直近7日のランク統計をもとに、セオリー・オフメタ・野良向け構成を比較します。",
     aiLocked: "共有パスワードが必要",
     select: "開く",
-    statOne: "5人構成をすぐに生成",
-    statTwo: "プロ試合データから抽選",
-    statThree: "統計とAIで構成を相談",
     howTitle: "3つの使い方",
     howBody: "身内カスタムはRandom Pick、プロ構成縛りはPro Pick、ランクで勝ちにいく構成相談はAI Compを選んでください。",
     loginEyebrow: "PRIVATE BETA ACCESS",
@@ -83,12 +65,6 @@ const COPY: Record<Language, Copy> = {
     unknown: "ログインに失敗しました。少し待ってから再試行してください。",
   },
   en: {
-    eyebrow: "VALORANT COMPOSITION TOOLKIT",
-    title: "Draft for fun, or draft to win.",
-    description: "Choose role-based random squads, past pro compositions, or AI composition advice backed by ranked statistics.",
-    randomCta: "Use Random Pick",
-    proCta: "Use Pro Pick",
-    aiCta: "Use AI Comp",
     randomMeta: "ROLE BASED",
     randomTitle: "RANDOM PICK",
     randomDescription: "Set role counts, generate five agents, then lock or reroll individual slots.",
@@ -100,9 +76,6 @@ const COPY: Record<Language, Copy> = {
     aiDescription: "Compare theory, off-meta, and solo-queue options using current-patch, rolling seven-day ranked statistics.",
     aiLocked: "Shared password required",
     select: "Open",
-    statOne: "Generate five-agent squads",
-    statTwo: "Draw from pro match data",
-    statThree: "Ask with ranked stats and AI",
     howTitle: "Three ways to build a team",
     howBody: "Use Random Pick for customs, Pro Pick for pro-composition challenges, and AI Comp for a data-backed ranked recommendation.",
     loginEyebrow: "PRIVATE BETA ACCESS",
@@ -119,12 +92,6 @@ const COPY: Record<Language, Copy> = {
     unknown: "Sign-in failed. Wait a moment and try again.",
   },
   ko: {
-    eyebrow: "VALORANT COMPOSITION TOOLKIT",
-    title: "재미있는 조합도, 승리를 위한 조합도.",
-    description: "역할 기반 랜덤 조합, 과거 프로 조합, 랭크 통계 기반 AI 조합 상담을 한곳에서 선택할 수 있습니다.",
-    randomCta: "Random Pick 사용",
-    proCta: "Pro Pick 사용",
-    aiCta: "AI 조합 사용",
     randomMeta: "ROLE BASED",
     randomTitle: "RANDOM PICK",
     randomDescription: "역할 인원수를 정해 5인 조합을 만들고 원하는 자리만 고정하거나 다시 추첨합니다.",
@@ -136,9 +103,6 @@ const COPY: Record<Language, Copy> = {
     aiDescription: "현 패치・최근 7일 랭크 통계로 정석, 오프메타, 솔로 랭크 조합을 비교합니다.",
     aiLocked: "공유 비밀번호 필요",
     select: "열기",
-    statOne: "5인 조합 즉시 생성",
-    statTwo: "프로 경기 데이터에서 추첨",
-    statThree: "통계와 AI로 조합 상담",
     howTitle: "세 가지 조합 도구",
     howBody: "내전은 Random Pick, 프로 조합 규칙은 Pro Pick, 랭크 승리를 위한 상담은 AI Comp를 선택하세요.",
     loginEyebrow: "PRIVATE BETA ACCESS",
@@ -242,39 +206,40 @@ export function HomeLanding({ locale }: { locale: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-10 pt-2">
-      <motion.section
-        initial={{ opacity: 0, filter: "blur(8px)" }}
-        animate={{ opacity: 1, filter: "blur(0px)" }}
-        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-        className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-16 sm:px-6 lg:py-24"
-      >
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <p className="font-display text-xs font-bold uppercase tracking-[0.35em] text-[var(--color-primary)]">{copy.eyebrow}</p>
-            {language !== "ja" ? <h1 className="mt-5 max-w-4xl font-display text-[clamp(3rem,7vw,6.5rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{copy.title}</h1> : null}
-            <p className="mt-6 max-w-2xl text-base leading-8 text-[var(--color-muted)] sm:text-lg">{copy.description}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button type="button" onClick={() => router.push(`/${language}/random-pick`)} className="px-7 py-3">{copy.randomCta}</Button>
-              <Button type="button" variant="ghost" onClick={() => router.push(`/${language}/pro-pick`)} className="px-7 py-3">{copy.proCta}</Button>
-              <Button type="button" variant="ghost" onClick={() => void openAiComposition()} disabled={checkingAccess} className="px-7 py-3">{checkingAccess ? copy.submitting : copy.aiCta}</Button>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <LandingStat value="5" label={copy.statOne} />
-            <LandingStat value="VCT" label={copy.statTwo} />
-            <LandingStat value="AI" label={copy.statThree} />
-          </div>
-        </div>
-      </motion.section>
-
-      <section className="relative left-1/2 grid w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:grid-cols-3">
-        <ChoiceCard meta={copy.randomMeta} title={copy.randomTitle} description={copy.randomDescription} action={copy.select} accent="var(--color-primary)" delay={0} onClick={() => router.push(`/${language}/random-pick`)} />
-        <ChoiceCard meta={copy.proMeta} title={copy.proTitle} description={copy.proDescription} action={copy.select} accent="var(--color-sentinel)" delay={0.06} onClick={() => router.push(`/${language}/pro-pick`)} />
-        <ChoiceCard meta={copy.aiMeta} title={copy.aiTitle} description={copy.aiDescription} action={checkingAccess ? copy.submitting : copy.select} note={copy.aiLocked} accent="var(--color-initiator)" delay={0.12} disabled={checkingAccess} onClick={() => void openAiComposition()} />
+    <div className="flex flex-col">
+      <section className="relative left-1/2 grid min-h-[calc(100svh-4rem)] w-screen -translate-x-1/2 overflow-hidden border-y border-[var(--color-line)] md:grid-cols-3">
+        <ChoiceCard
+          meta={copy.randomMeta}
+          title={copy.randomTitle}
+          description={copy.randomDescription}
+          action={copy.select}
+          accent="var(--color-primary)"
+          delay={0}
+          onClick={() => router.push(`/${language}/random-pick`)}
+        />
+        <ChoiceCard
+          meta={copy.proMeta}
+          title={copy.proTitle}
+          description={copy.proDescription}
+          action={copy.select}
+          accent="var(--color-sentinel)"
+          delay={0.06}
+          onClick={() => router.push(`/${language}/pro-pick`)}
+        />
+        <ChoiceCard
+          meta={copy.aiMeta}
+          title={copy.aiTitle}
+          description={copy.aiDescription}
+          action={checkingAccess ? copy.submitting : copy.select}
+          note={copy.aiLocked}
+          accent="var(--color-initiator)"
+          delay={0.12}
+          disabled={checkingAccess}
+          onClick={() => void openAiComposition()}
+        />
       </section>
 
-      <section className="clip-frame border border-[var(--color-line)] bg-[var(--color-surface)] p-6 sm:p-8">
+      <section className="clip-frame mt-10 border border-[var(--color-line)] bg-[var(--color-surface)] p-6 sm:p-8">
         <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-primary)]">SELECT YOUR MODE</p>
         <h2 className="mt-3 font-display text-2xl font-bold text-[var(--color-ink)] sm:text-3xl">{copy.howTitle}</h2>
         <p className="mt-4 max-w-4xl text-sm leading-7 text-[var(--color-muted)]">{copy.howBody}</p>
@@ -287,7 +252,9 @@ export function HomeLanding({ locale }: { locale: string }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onMouseDown={(event) => { if (event.target === event.currentTarget) closeLogin(); }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeLogin();
+            }}
           >
             <motion.section
               role="dialog"
@@ -301,10 +268,24 @@ export function HomeLanding({ locale }: { locale: string }) {
               <p className="font-display text-xs font-bold uppercase tracking-[0.28em] text-[var(--color-initiator)]">{copy.loginEyebrow}</p>
               <h2 id="ai-login-title" className="mt-3 font-display text-3xl font-bold text-[var(--color-ink)]">{copy.loginTitle}</h2>
               <p className="mt-4 text-sm leading-7 text-[var(--color-muted)]">{copy.loginBody}</p>
-              {errorMessage(copy, error) ? <p className="mt-5 border border-[var(--color-primary)]/60 bg-[var(--color-primary)]/10 px-4 py-3 text-sm" role="alert">{errorMessage(copy, error)}</p> : null}
+              {errorMessage(copy, error) ? (
+                <p className="mt-5 border border-[var(--color-primary)]/60 bg-[var(--color-primary)]/10 px-4 py-3 text-sm" role="alert">
+                  {errorMessage(copy, error)}
+                </p>
+              ) : null}
               <form onSubmit={submitLogin} className="mt-6">
                 <label htmlFor="home-ai-password" className="text-sm font-semibold text-[var(--color-ink)]">{copy.password}</label>
-                <input id="home-ai-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoFocus autoComplete="current-password" placeholder={copy.placeholder} className="mt-2 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-4 py-3 text-base outline-none transition focus:border-[var(--color-initiator)]" />
+                <input
+                  id="home-ai-password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  autoFocus
+                  autoComplete="current-password"
+                  placeholder={copy.placeholder}
+                  className="mt-2 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-deep)] px-4 py-3 text-base outline-none transition focus:border-[var(--color-initiator)]"
+                />
                 <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                   <Button type="button" variant="ghost" onClick={closeLogin} disabled={submitting} className="px-5 py-3">{copy.cancel}</Button>
                   <Button type="submit" disabled={submitting || !password} className="px-5 py-3">{submitting ? copy.submitting : copy.submit}</Button>
@@ -318,23 +299,65 @@ export function HomeLanding({ locale }: { locale: string }) {
   );
 }
 
-function LandingStat({ value, label }: { value: string; label: string }) {
-  return <div className="clip-frame border border-[var(--color-line)] bg-[var(--color-surface-2)] p-5"><p className="font-display text-4xl font-bold text-[var(--color-primary)]">{value}</p><p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{label}</p></div>;
-}
-
-function ChoiceCard({ meta, title, description, action, note, accent, delay, disabled = false, onClick }: { meta: string; title: string; description: string; action: string; note?: string; accent: string; delay: number; disabled?: boolean; onClick: () => void }) {
+function ChoiceCard({
+  meta,
+  title,
+  description,
+  action,
+  note,
+  accent,
+  delay,
+  disabled = false,
+  onClick,
+}: {
+  meta: string;
+  title: string;
+  description: string;
+  action: string;
+  note?: string;
+  accent: string;
+  delay: number;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
   return (
-    <motion.button type="button" disabled={disabled} onClick={onClick} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.52, delay, ease: [0.16, 1, 0.3, 1] }} whileHover={disabled ? undefined : { y: -4 }} whileTap={disabled ? undefined : { scale: 0.99 }} className="group relative flex min-h-[24rem] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-7 py-9 text-left transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-wait disabled:opacity-70 md:min-h-[31rem] md:border-b-0 md:border-r md:px-9 lg:px-12 last:md:border-r-0">
-      <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: `linear-gradient(145deg, ${accent}, transparent 32%)` }} />
+    <motion.button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.52, delay, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={disabled ? undefined : { y: -4 }}
+      whileTap={disabled ? undefined : { scale: 0.99 }}
+      className="group relative flex min-h-[30rem] overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-surface)] px-7 py-10 text-left transition-colors hover:bg-[var(--color-surface-2)] disabled:cursor-wait disabled:opacity-70 md:min-h-[calc(100svh-4rem)] md:border-b-0 md:border-r md:px-10 md:py-14 lg:px-14 lg:py-16 last:md:border-r-0"
+    >
+      <div
+        className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `linear-gradient(145deg, ${accent}, transparent 32%)` }}
+      />
       <div className="absolute inset-x-0 top-0 h-1" style={{ background: accent }} />
-      <div className="relative flex w-full flex-col justify-between gap-10 self-stretch">
-        <div className="pt-5 md:pt-8">
+      <div className="relative flex w-full flex-col justify-between gap-12 self-stretch">
+        <div className="pt-5 md:pt-10">
           <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-muted)]">{meta}</p>
-          <h2 className="mt-5 break-words font-display text-[clamp(2.8rem,4.2vw,5.2rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{title}</h2>
-          <p className="mt-6 text-sm leading-7 text-[var(--color-muted)] sm:text-base">{description}</p>
-          {note ? <span className="mt-5 inline-flex border border-[var(--color-line)] bg-black/20 px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]">🔒 {note}</span> : null}
+          <h2 className="mt-6 break-words font-display text-[clamp(3rem,4.6vw,6rem)] font-bold leading-none tracking-wide text-[var(--color-ink)]">{title}</h2>
+          <p className="mt-7 max-w-xl text-sm leading-7 text-[var(--color-muted)] sm:text-base">{description}</p>
+          {note ? (
+            <span className="mt-6 inline-flex border border-[var(--color-line)] bg-black/20 px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]">
+              🔒 {note}
+            </span>
+          ) : null}
         </div>
-        <div className="flex items-center justify-between gap-3 pb-2"><span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">{action}</span><span className="flex h-12 w-12 items-center justify-center border border-[var(--color-line)] text-2xl transition-transform group-hover:translate-x-1" style={{ color: accent }} aria-hidden="true">→</span></div>
+        <div className="flex items-center justify-between gap-3 pb-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">{action}</span>
+          <span
+            className="flex h-14 w-14 items-center justify-center border border-[var(--color-line)] text-3xl transition-transform group-hover:translate-x-1"
+            style={{ color: accent }}
+            aria-hidden="true"
+          >
+            →
+          </span>
+        </div>
       </div>
     </motion.button>
   );
