@@ -3,9 +3,16 @@ import { default as nextHandler } from "./.open-next/worker.js";
 import { rebuildLatestRecommendationSnapshots } from "./lib/meta-beta/aggregation";
 import type { D1DatabaseBinding } from "./lib/meta-beta/auth";
 import { GLOBAL_META_REGION } from "./lib/meta-beta/global-ingest";
+import {
+  collectRiotRecentCompetitiveMatches,
+  type RiotRecentRoute,
+} from "./lib/meta-beta/riot-global-collector";
+import { RiotValorantApiClient } from "./lib/meta-beta/riot-client";
 
 interface WorkerEnv {
   DB?: D1DatabaseBinding;
+  RIOT_API_KEY?: string;
+  RIOT_MATCH_DETAIL_BUDGET?: string;
 }
 
 interface ScheduledEventLike {
@@ -25,6 +32,26 @@ async function cleanupOperationalData(db: D1DatabaseBinding, now = Date.now()): 
   ]);
 }
 
+function detailBudget(value: string | undefined): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed)) return 120;
+  return Math.min(Math.max(parsed, 1), 250);
+}
+
+function riotClientFactory(apiKey: string): (route: RiotRecentRoute) => RiotValorantApiClient {
+  const clients = new Map<RiotRecentRoute, RiotValorantApiClient>();
+  return (route) => {
+    const existing = clients.get(route);
+    if (existing) return existing;
+    const client = new RiotValorantApiClient({
+      apiKey,
+      baseUrl: `https://${route}.api.riotgames.com`,
+    });
+    clients.set(route, client);
+    return client;
+  };
+}
+
 const worker = {
   fetch: nextHandler.fetch,
 
@@ -40,10 +67,19 @@ const worker = {
 
     const scheduledTime = Number.isFinite(event.scheduledTime) ? event.scheduledTime : Date.now();
 
-    if (event.cron === "17 * * * *") {
-      // Global ranked match ingestion is provider-driven. The previous tracked-player
-      // collector is intentionally disabled because this product does not build its
-      // statistics from individual opt-in accounts.
+    if (event.cron === "*/10 * * * *") {
+      const apiKey = env.RIOT_API_KEY?.trim();
+      if (!apiKey) {
+        console.warn("Riot recent-match collection skipped because RIOT_API_KEY is missing");
+        return;
+      }
+      const result = await collectRiotRecentCompetitiveMatches(
+        env.DB,
+        riotClientFactory(apiKey),
+        scheduledTime,
+        { maximumDetailsPerRun: detailBudget(env.RIOT_MATCH_DETAIL_BUDGET) },
+      );
+      console.log("Global Riot recent-match collection finished", result);
       return;
     }
 
