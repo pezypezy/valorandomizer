@@ -4,6 +4,8 @@ import { AGENTS } from "./agents";
 import {
   GLOBAL_META_REGION,
   normalizeGlobalRankedBatch,
+  normalizeServerCluster,
+  shardGroupForRoute,
   type GlobalRankedBatch,
 } from "./meta-beta/global-ingest";
 
@@ -51,11 +53,11 @@ function competitivePayload(matchId = "global-match-1") {
   };
 }
 
-test("global ranked batches normalize into an anonymous global dataset", () => {
+test("global ranked batches normalize route, group and server cluster", () => {
   const batch: GlobalRankedBatch = {
-    source: "riot-approved-feed",
+    source: "licensed-match-feed",
     fetchedAt: 1_775_000_100,
-    matches: [{ shard: "ap", payload: competitivePayload() }],
+    matches: [{ route: "ap", serverCluster: " Tokyo ", payload: competitivePayload() }],
   };
 
   const result = normalizeGlobalRankedBatch(batch, {
@@ -65,10 +67,26 @@ test("global ranked batches normalize into an anonymous global dataset", () => {
   assert.equal(result.payloadMatches, 1);
   assert.equal(result.rejectedMatches, 0);
   assert.equal(result.matches.length, 1);
+  assert.equal(result.matches[0].route, "ap");
+  assert.equal(result.matches[0].shardGroup, "ap");
+  assert.equal(result.matches[0].serverCluster, "tokyo");
   assert.equal(result.matches[0].match.region, GLOBAL_META_REGION);
   assert.equal(result.matches[0].match.mapId, "Ascent");
   assert.equal(result.matches[0].match.teams[0].rankBucket, "Ascendant");
   assert.equal("puuid" in result.matches[0].match.teams[0], false);
+});
+
+test("americas routes share one shard group", () => {
+  assert.equal(shardGroupForRoute("na"), "americas");
+  assert.equal(shardGroupForRoute("latam"), "americas");
+  assert.equal(shardGroupForRoute("br"), "americas");
+  assert.equal(shardGroupForRoute("eu"), "eu");
+});
+
+test("missing or unsafe cluster labels become stable keys", () => {
+  assert.equal(normalizeServerCluster(null), "unknown");
+  assert.equal(normalizeServerCluster("US Central (Illinois)"), "us-central-illinois");
+  assert.equal(normalizeServerCluster("  "), "unknown");
 });
 
 test("global ranked batches reject unusable matches without inventing statistics", () => {
@@ -76,9 +94,9 @@ test("global ranked batches reject unusable matches without inventing statistics
   payload.matchInfo.queueId = "unrated";
 
   const result = normalizeGlobalRankedBatch({
-    source: "riot-approved-feed",
+    source: "licensed-match-feed",
     fetchedAt: 1_775_000_100,
-    matches: [{ shard: "eu", payload }],
+    matches: [{ route: "eu", serverCluster: "London", payload }],
   }, {
     resolveMapName: () => "Ascent",
   });
@@ -91,6 +109,6 @@ test("global ranked batches require a stable source identifier", () => {
   assert.throws(() => normalizeGlobalRankedBatch({
     source: "Third Party Feed",
     fetchedAt: 1_775_000_100,
-    matches: [{ shard: "na", payload: competitivePayload() }],
+    matches: [{ route: "na", payload: competitivePayload() }],
   }), /source/u);
 });
