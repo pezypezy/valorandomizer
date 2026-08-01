@@ -24,6 +24,23 @@ CREATE TABLE IF NOT EXISTS global_ingest_runs (
 CREATE INDEX IF NOT EXISTS idx_global_ingest_runs_started
   ON global_ingest_runs(started_at DESC);
 
+CREATE TABLE IF NOT EXISTS global_match_discovery (
+  match_id TEXT PRIMARY KEY,
+  source_route TEXT NOT NULL,
+  shard_group TEXT NOT NULL,
+  discovered_at INTEGER NOT NULL,
+  source_time INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'complete', 'failed')),
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at INTEGER NOT NULL DEFAULT 0,
+  completed_at INTEGER,
+  last_error TEXT,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_global_match_discovery_pending
+  ON global_match_discovery(status, next_attempt_at, discovered_at);
+
 CREATE TABLE IF NOT EXISTS global_dataset_coverage (
   stat_date TEXT NOT NULL,
   source TEXT NOT NULL,
