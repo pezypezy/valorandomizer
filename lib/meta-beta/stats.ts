@@ -7,7 +7,7 @@ import {
   type MetaRecommendationCategory,
 } from "@/lib/meta-beta/mock-data";
 
-export const DEFAULT_META_REGION = "jp";
+export const DEFAULT_META_REGION = "global";
 
 interface RecommendationRow {
   stat_date: string;
