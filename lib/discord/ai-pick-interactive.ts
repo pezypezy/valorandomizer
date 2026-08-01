@@ -47,8 +47,10 @@ export type AiPickDiscordMessage = {
   content: string;
   allowed_mentions: { parse: string[]; users: string[] };
   embeds: DiscordEmbed[];
+  flags?: number;
 };
 
+const EPHEMERAL = 1 << 6;
 const CATEGORY_ORDER: MetaRecommendationCategory[] = ["theory", "offMeta", "soloQueue"];
 const CATEGORY_COLORS: Record<MetaRecommendationCategory, number> = {
   theory: 0xff4655,
@@ -90,6 +92,8 @@ const COPY = {
     mapPlaceholder: "マップを選択",
     rankPlaceholder: "ランクを選択",
     heading: (map: string, rank: string) => `${map}・${rank}のAI構成候補`,
+    unavailable: (map: string, rank: string) =>
+      `${map}・${rank}は、公開できる実データがまだありません。サンプル構成は表示せず、Riot公式APIの収集完了後に利用可能になります。`,
     categories: { theory: "セオリー構成", offMeta: "オフメタ構成", soloQueue: "野良向け構成" },
     composition: "構成",
     adjustedWinRate: "補正勝率",
@@ -99,14 +103,15 @@ const COPY = {
     caution: "注意点",
     confidenceValues: { high: "高", medium: "中", low: "低" },
     matchesValue: (value: number) => `${value.toLocaleString("ja-JP")}試合`,
-    sourceD1: "実データ",
-    sourceSample: "サンプルデータ（実データ未取得）",
+    sourceD1: "Riot公式API由来の集計データ",
   },
   en: {
     selector: "Select a map and rank. Choosing the second value posts three compositions to this channel.",
     mapPlaceholder: "Select map",
     rankPlaceholder: "Select rank",
     heading: (map: string, rank: string) => `AI composition picks for ${map}・${rank}`,
+    unavailable: (map: string, rank: string) =>
+      `There is not enough live data to publish ${map}・${rank} yet. Sample compositions are disabled and this option will become available after Riot API collection completes.`,
     categories: { theory: "Theory composition", offMeta: "Off-meta composition", soloQueue: "Solo queue composition" },
     composition: "Composition",
     adjustedWinRate: "Adjusted win rate",
@@ -116,14 +121,15 @@ const COPY = {
     caution: "Caution",
     confidenceValues: { high: "High", medium: "Medium", low: "Low" },
     matchesValue: (value: number) => `${value.toLocaleString("en-US")} matches`,
-    sourceD1: "Live data",
-    sourceSample: "Sample data (live data unavailable)",
+    sourceD1: "Aggregated from Riot official API data",
   },
   ko: {
     selector: "맵과 랭크를 선택하세요. 두 번째 항목을 선택하면 세 조합을 채널에 공개합니다.",
     mapPlaceholder: "맵 선택",
     rankPlaceholder: "랭크 선택",
     heading: (map: string, rank: string) => `${map}・${rank} AI 조합 추천`,
+    unavailable: (map: string, rank: string) =>
+      `${map}・${rank}에 공개할 수 있는 실데이터가 아직 없습니다. 샘플 조합은 표시하지 않으며 Riot 공식 API 수집이 완료되면 사용할 수 있습니다.`,
     categories: { theory: "정석 조합", offMeta: "오프메타 조합", soloQueue: "솔로 랭크 조합" },
     composition: "조합",
     adjustedWinRate: "보정 승률",
@@ -133,8 +139,7 @@ const COPY = {
     caution: "주의사항",
     confidenceValues: { high: "높음", medium: "보통", low: "낮음" },
     matchesValue: (value: number) => `${value.toLocaleString("ko-KR")}경기`,
-    sourceD1: "실데이터",
-    sourceSample: "샘플 데이터 (실데이터 없음)",
+    sourceD1: "Riot 공식 API 집계 데이터",
   },
 } as const;
 
@@ -230,9 +235,19 @@ export function buildAiPickDiscordMessage(
   locale: DiscordLocale,
 ): AiPickDiscordMessage {
   const copy = COPY[locale];
+  const localizedRank = rankLabel(locale, stats.dataScope.rank);
+
+  if (stats.source !== "d1") {
+    return {
+      content: copy.unavailable(stats.dataScope.map, localizedRank),
+      allowed_mentions: { parse: [], users: [] },
+      embeds: [],
+      flags: EPHEMERAL,
+    };
+  }
+
   const byCategory = new Map(stats.recommendations.map((recommendation) => [recommendation.category, recommendation]));
-  const source = stats.source === "d1" ? copy.sourceD1 : copy.sourceSample;
-  const footer = `${source} • Patch ${stats.dataScope.patch} • ${stats.dataScope.periodStart}〜${stats.dataScope.periodEnd}`;
+  const footer = `${copy.sourceD1} • Patch ${stats.dataScope.patch} • ${stats.dataScope.periodStart}〜${stats.dataScope.periodEnd}`;
 
   const embeds = CATEGORY_ORDER.flatMap((category) => {
     const recommendation = byCategory.get(category);
@@ -255,7 +270,7 @@ export function buildAiPickDiscordMessage(
   });
 
   return {
-    content: `<@${userId}> ${copy.heading(stats.dataScope.map, rankLabel(locale, stats.dataScope.rank))}`,
+    content: `<@${userId}> ${copy.heading(stats.dataScope.map, localizedRank)}`,
     allowed_mentions: { parse: [], users: [userId] },
     embeds,
   };
