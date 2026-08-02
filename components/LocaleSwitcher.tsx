@@ -16,6 +16,7 @@ export function LocaleSwitcher() {
   return (
     <div
       className="clip-btn flex items-center gap-px border border-[var(--color-line)] bg-[var(--color-surface)] p-px"
+      role="group"
       aria-label={t("switch")}
     >
       {routing.locales.map((locale) => (
@@ -23,9 +24,12 @@ export function LocaleSwitcher() {
           key={locale}
           type="button"
           disabled={isPending}
-          onClick={() =>
-            startTransition(() => router.replace(pathname, { locale }))
-          }
+          aria-pressed={locale === active}
+          lang={locale}
+          onClick={() => {
+            if (locale === active) return;
+            startTransition(() => router.replace(pathname, { locale }));
+          }}
           className={clsx(
             "px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
             locale === active

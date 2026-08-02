@@ -50,14 +50,22 @@ export function AgentCard({
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-deep)] via-transparent to-transparent" />
 
         {/* controls */}
-        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <IconButton title={t("actions.reroll")} onClick={onReroll}>
+        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-100">
+          <IconButton
+            title={t("actions.rerollAgent", { agent: agent.name })}
+            onClick={onReroll}
+          >
             <RerollGlyph />
           </IconButton>
           <IconButton
-            title={locked ? t("actions.locked") : t("actions.lock")}
+            title={
+              locked
+                ? t("actions.unlockAgent", { agent: agent.name })
+                : t("actions.lockAgent", { agent: agent.name })
+            }
             onClick={onToggleLock}
             active={locked}
+            pressed={locked}
           >
             <LockGlyph open={!locked} />
           </IconButton>
@@ -97,20 +105,23 @@ function IconButton({
   title,
   onClick,
   active,
+  pressed,
 }: {
   children: React.ReactNode;
   title: string;
   onClick: () => void;
   active?: boolean;
+  pressed?: boolean;
 }) {
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
+      aria-pressed={pressed}
       onClick={onClick}
       className={clsx(
-        "flex h-8 w-8 items-center justify-center border border-white/20 backdrop-blur-sm transition-colors",
+        "flex h-11 w-11 items-center justify-center border border-white/20 backdrop-blur-sm transition-colors",
         active
           ? "bg-[var(--color-primary)] text-white"
           : "bg-black/40 text-white hover:bg-black/70",

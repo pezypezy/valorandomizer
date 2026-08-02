@@ -22,8 +22,8 @@
 
 /* Map next/font CSS variables onto Tailwind font tokens (inline = reference, not copy). */
 @theme inline {
-  --font-display: var(--font-hikomi);
-  --font-sans: var(--font-noto);
+  --font-display: var(--font-orbitron);
+  --font-sans: var(--font-zen-kaku);
 }
 
 :root {
@@ -41,6 +41,11 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+:where(a, button, select):focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
 }
 
 /* Display font helper — Hikomi for headings, falls back to body font. */
@@ -141,6 +146,12 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
   .bg-grid,
   .text-glitch {
     animation: none;

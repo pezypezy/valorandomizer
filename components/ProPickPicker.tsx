@@ -1,29 +1,34 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AGENTS } from "@/lib/agents";
 import { PRO_PICKS, type ProPick } from "@/lib/pro-picks";
+import {
+  drawProPicks,
+  getCommonMaps,
+  type ProPickSideMode,
+} from "@/lib/pro-pick-draw";
+import {
+  clearMatchRecords,
+  MAX_MATCH_RECORDS,
+  saveMatchRecords,
+  useMatchRecords,
+  type MatchOutcome,
+  type MatchRecord,
+} from "@/lib/pro-pick-records";
 import { type Agent, ROLE_META } from "@/lib/roles";
 import { Button } from "./ui/Button";
 
-type SideMode = "both" | "single" | "mirror";
 type DrawnPick = ProPick & { drawId: number };
-type MatchOutcome = "left" | "right" | "draw";
-type MatchRecord = {
-  id: string;
-  recordedAt: string;
-  outcome: MatchOutcome;
-  left: ProPick;
-  right: ProPick | null;
-};
 type PickFilters = {
   map: string;
   event: string;
   region: string;
   team: string;
 };
+type PickFilterKey = keyof PickFilters;
 type DrawDataEntry = {
   side: "A" | "B";
   pick: ProPick;
@@ -31,28 +36,19 @@ type DrawDataEntry = {
 
 const ALL = "all";
 const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, region: ALL, team: ALL };
-const RECORD_STORAGE_KEY = "valorandomizer.proPick.matchRecords";
-const MAX_RECORDS = 100;
+const SIDE_MODES: readonly ProPickSideMode[] = ["both", "single", "mirror"];
 
 export function ProPickPicker() {
   const t = useTranslations();
   const [leftFilters, setLeftFilters] = useState<PickFilters>(DEFAULT_FILTERS);
   const [rightFilters, setRightFilters] = useState<PickFilters>(DEFAULT_FILTERS);
-  const [sideMode, setSideMode] = useState<SideMode>("both");
+  const [sideMode, setSideMode] = useState<ProPickSideMode>("both");
   const [left, setLeft] = useState<DrawnPick | null>(null);
   const [right, setRight] = useState<DrawnPick | null>(null);
   const [drawCounter, setDrawCounter] = useState(0);
-  const [records, setRecords] = useState<MatchRecord[]>([]);
+  const records = useMatchRecords();
+  const [storageError, setStorageError] = useState(false);
   const [showDataList, setShowDataList] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(RECORD_STORAGE_KEY);
-      if (stored) setRecords(JSON.parse(stored) as MatchRecord[]);
-    } catch {
-      setRecords([]);
-    }
-  }, []);
 
   const maps = useMemo(() => unique(PRO_PICKS.map((pick) => pick.map)), []);
   const events = useMemo(() => unique(PRO_PICKS.map((pick) => pick.event)), []);
@@ -74,38 +70,30 @@ export function ProPickPicker() {
     ];
   }, [leftCandidates, rightCandidates, sideMode]);
   const drawDataCount = useMemo(() => new Set(drawDataEntries.map((entry) => entry.pick.id)).size, [drawDataEntries]);
+  const commonMaps = useMemo(
+    () => getCommonMaps(leftCandidates, rightCandidates),
+    [leftCandidates, rightCandidates],
+  );
 
-  const canPick = leftCandidates.length > 0 && (sideMode !== "both" || rightCandidates.length > 0);
+  const canPick =
+    leftCandidates.length > 0 && (sideMode !== "both" || commonMaps.length > 0);
 
   function draw() {
-    if (!canPick) {
-      setLeft(null);
-      setRight(null);
-      return;
-    }
+    const nextDraw = drawProPicks(leftCandidates, rightCandidates, sideMode);
+    if (!nextDraw) return;
 
     const nextDrawId = drawCounter + 1;
-    const first = withDrawId(pickOne(leftCandidates), nextDrawId);
-    let second: DrawnPick | null = null;
-
-    if (sideMode === "mirror") {
-      second = withDrawId(first, nextDrawId + 1000);
-    } else if (sideMode === "both") {
-      second = withDrawId(pickOne(rightCandidates), nextDrawId + 1000);
-      if (rightCandidates.length > 1) {
-        while (second.id === first.id) second = withDrawId(pickOne(rightCandidates), nextDrawId + 1000);
-      }
-    }
-
     setDrawCounter(nextDrawId);
-    setLeft(first);
-    setRight(second);
+    setLeft(withDrawId(nextDraw.left, nextDrawId));
+    setRight(
+      nextDraw.right ? withDrawId(nextDraw.right, nextDrawId + 1000) : null,
+    );
   }
 
   function recordMatch(outcome: MatchOutcome) {
     if (!left) return;
 
-    const nextRecords = [
+    const nextRecords: MatchRecord[] = [
       {
         id: `${Date.now()}-${left.id}-${right?.id ?? "single"}`,
         recordedAt: new Date().toISOString(),
@@ -114,32 +102,28 @@ export function ProPickPicker() {
         right: right ? stripDrawId(right) : null,
       },
       ...records,
-    ].slice(0, MAX_RECORDS);
+    ].slice(0, MAX_MATCH_RECORDS);
 
-    setRecords(nextRecords);
-    window.localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(nextRecords));
+    setStorageError(!saveMatchRecords(nextRecords));
   }
 
   function clearRecords() {
-    setRecords([]);
-    window.localStorage.removeItem(RECORD_STORAGE_KEY);
+    if (!window.confirm(t("proPick.historyClearConfirm"))) return;
+    setStorageError(!clearMatchRecords());
   }
 
-  function filterPicks(filters: PickFilters) {
-    return PRO_PICKS.filter((pick) => {
-      return (
-        (filters.map === ALL || pick.map === filters.map) &&
-        (filters.event === ALL || pick.event === filters.event) &&
-        (filters.region === ALL || pick.region === filters.region) &&
-        (filters.team === ALL || pick.team === filters.team)
-      );
-    });
+  function changeSideMode(value: ProPickSideMode) {
+    setSideMode(value);
+    setLeft(null);
+    setRight(null);
   }
 
-  function updateFilters(side: "left" | "right", key: keyof PickFilters, value: string) {
+  function updateFilters(side: "left" | "right", key: PickFilterKey, value: string) {
     const updater = (filters: PickFilters) => ({ ...filters, [key]: value });
     if (side === "left") setLeftFilters(updater);
     else setRightFilters(updater);
+    setLeft(null);
+    setRight(null);
   }
 
   return (
@@ -159,6 +143,8 @@ export function ProPickPicker() {
           </span>
           <button
             type="button"
+            aria-expanded={showDataList}
+            aria-controls="pro-pick-draw-data"
             onClick={() => setShowDataList((value) => !value)}
             className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
           >
@@ -172,9 +158,9 @@ export function ProPickPicker() {
         <Select
           label={t("proPick.mode")}
           value={sideMode}
-          values={["both", "single", "mirror"]}
+          values={SIDE_MODES}
           labels={{ both: t("proPick.both"), single: t("proPick.single"), mirror: t("proPick.mirror") }}
-          onChange={(value) => setSideMode(value as SideMode)}
+          onChange={changeSideMode}
         />
         <Button
           type="button"
@@ -185,8 +171,16 @@ export function ProPickPicker() {
           {t("proPick.pick")}
         </Button>
       </div>
+      {sideMode === "both" &&
+      leftCandidates.length > 0 &&
+      rightCandidates.length > 0 &&
+      commonMaps.length === 0 ? (
+        <p className="text-center text-sm text-[var(--color-primary-soft)]" role="status">
+          {t("proPick.noCommonMap")}
+        </p>
+      ) : null}
 
-      <div className="grid gap-3 xl:grid-cols-2">
+      <div className="grid gap-3 2xl:grid-cols-2">
         <FilterPanel
           title="Team A"
           filters={leftFilters}
@@ -215,21 +209,33 @@ export function ProPickPicker() {
         </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-2">
+      <div className="grid gap-3 2xl:grid-cols-2" aria-live="polite">
         <PickResult key={left?.drawId ?? "left-empty"} label="Team A" pick={left} agentByName={agentByName} />
         <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
       </div>
 
-      <MatchHistory records={records} canRecord={Boolean(left)} hasRight={Boolean(right)} onRecord={recordMatch} onClear={clearRecords} />
+      <MatchHistory
+        records={records}
+        canRecord={Boolean(left)}
+        hasRight={Boolean(right)}
+        storageError={storageError}
+        onRecord={recordMatch}
+        onClear={clearRecords}
+      />
     </section>
   );
 }
 
-function DrawDataList({ entries, onClose }: { entries: DrawDataEntry[]; onClose: () => void }) {
+function DrawDataList({ entries, onClose }: { entries: readonly DrawDataEntry[]; onClose: () => void }) {
   const t = useTranslations();
 
   return (
-    <div className="absolute right-0 top-full z-30 mt-2 w-[min(calc(100vw-2rem),42rem)] border border-[var(--color-line)] bg-[var(--color-bg-deep)] p-3 shadow-2xl">
+    <div
+      id="pro-pick-draw-data"
+      role="region"
+      aria-label={t("proPick.dataListHeading")}
+      className="absolute right-0 top-full z-30 mt-2 w-[min(calc(100vw-2rem),42rem)] border border-[var(--color-line)] bg-[var(--color-bg-deep)] p-3 shadow-2xl"
+    >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h3 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
@@ -292,9 +298,10 @@ function FilterPanel({
   teams: string[];
   disabled?: boolean;
   disabledText?: string;
-  onChange: (key: keyof PickFilters, value: string) => void;
+  onChange: (key: PickFilterKey, value: string) => void;
 }) {
   const t = useTranslations();
+  const optionIsAvailable = (key: PickFilterKey, value: string) => filterPicks({ ...filters, [key]: value }).length > 0;
 
   return (
     <div className="min-w-0 border border-[var(--color-line)] bg-[var(--color-surface)] p-3">
@@ -305,31 +312,33 @@ function FilterPanel({
         ) : null}
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(7rem,0.8fr)_minmax(13rem,1.25fr)_minmax(8.5rem,0.9fr)_minmax(13rem,1.25fr)]">
-        <Select label={t("proPick.map")} value={filters.map} values={[ALL, ...maps]} onChange={(value) => onChange("map", value)} allLabel={t("proPick.all")} disabled={disabled} />
-        <Select label={t("proPick.event")} value={filters.event} values={[ALL, ...events]} onChange={(value) => onChange("event", value)} allLabel={t("proPick.all")} disabled={disabled} />
-        <Select label={t("proPick.region")} value={filters.region} values={[ALL, ...regions]} onChange={(value) => onChange("region", value)} allLabel={t("proPick.all")} disabled={disabled} />
-        <Select label={t("proPick.team")} value={filters.team} values={[ALL, ...teams]} onChange={(value) => onChange("team", value)} allLabel={t("proPick.all")} disabled={disabled} />
+        <Select label={t("proPick.map")} value={filters.map} values={[ALL, ...maps]} onChange={(value) => onChange("map", value)} allLabel={t("proPick.all")} disabled={disabled} isOptionDisabled={(value) => !optionIsAvailable("map", value)} />
+        <Select label={t("proPick.event")} value={filters.event} values={[ALL, ...events]} onChange={(value) => onChange("event", value)} allLabel={t("proPick.all")} disabled={disabled} isOptionDisabled={(value) => !optionIsAvailable("event", value)} />
+        <Select label={t("proPick.region")} value={filters.region} values={[ALL, ...regions]} onChange={(value) => onChange("region", value)} allLabel={t("proPick.all")} disabled={disabled} isOptionDisabled={(value) => !optionIsAvailable("region", value)} />
+        <Select label={t("proPick.team")} value={filters.team} values={[ALL, ...teams]} onChange={(value) => onChange("team", value)} allLabel={t("proPick.all")} disabled={disabled} isOptionDisabled={(value) => !optionIsAvailable("team", value)} />
       </div>
     </div>
   );
 }
 
-function Select({
+function Select<T extends string>({
   label,
   value,
   values,
   labels,
   allLabel,
   disabled,
+  isOptionDisabled,
   onChange,
 }: {
   label: string;
-  value: string;
-  values: string[];
-  labels?: Record<string, string>;
+  value: T;
+  values: readonly T[];
+  labels?: Partial<Record<T, string>>;
   allLabel?: string;
   disabled?: boolean;
-  onChange: (value: string) => void;
+  isOptionDisabled?: (value: T) => boolean;
+  onChange: (value: T) => void;
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5">
@@ -337,11 +346,11 @@ function Select({
       <select
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(event.target.value as T)}
         className="min-h-10 w-full truncate border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-2 text-sm text-[var(--color-ink)] outline-none disabled:cursor-not-allowed disabled:opacity-45"
       >
         {values.map((item) => (
-          <option key={item} value={item}>
+          <option key={item} value={item} disabled={isOptionDisabled?.(item) ?? false}>
             {labels?.[item] ?? (item === ALL ? allLabel : item)}
           </option>
         ))}
@@ -410,12 +419,14 @@ function MatchHistory({
   records,
   canRecord,
   hasRight,
+  storageError,
   onRecord,
   onClear,
 }: {
-  records: MatchRecord[];
+  records: readonly MatchRecord[];
   canRecord: boolean;
   hasRight: boolean;
+  storageError: boolean;
   onRecord: (outcome: MatchOutcome) => void;
   onClear: () => void;
 }) {
@@ -443,6 +454,11 @@ function MatchHistory({
           </button>
         ) : null}
       </div>
+      {storageError ? (
+        <p className="mt-3 text-sm text-[var(--color-primary-soft)]" role="alert">
+          {t("proPick.historyStorageError")}
+        </p>
+      ) : null}
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <button type="button" disabled={!canRecord} onClick={() => onRecord("left")} className="min-h-10 border border-[var(--color-line)] px-3 py-2 text-sm font-semibold text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-45">
           {t("proPick.recordTeamA")}
@@ -501,8 +517,17 @@ function withDrawId(proPick: ProPick, drawId: number): DrawnPick {
   return { ...proPick, drawId };
 }
 
-function stripDrawId({ drawId: _drawId, ...pick }: DrawnPick): ProPick {
-  return pick;
+function stripDrawId(pick: DrawnPick): ProPick {
+  return {
+    id: pick.id,
+    event: pick.event,
+    match: pick.match,
+    map: pick.map,
+    region: pick.region,
+    team: pick.team,
+    agents: pick.agents,
+    source: pick.source,
+  };
 }
 
 function getOpponentLabel(proPick: ProPick) {
@@ -517,8 +542,15 @@ function getOutcomeLabel(record: MatchRecord, t: ReturnType<typeof useTranslatio
   return t("proPick.outcomeWinner", { team: record.right?.team ?? "Team B" });
 }
 
-function pickOne<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
+function filterPicks(filters: PickFilters) {
+  return PRO_PICKS.filter((pick) => {
+    return (
+      (filters.map === ALL || pick.map === filters.map) &&
+      (filters.event === ALL || pick.event === filters.event) &&
+      (filters.region === ALL || pick.region === filters.region) &&
+      (filters.team === ALL || pick.team === filters.team)
+    );
+  });
 }
 
 function unique(items: string[]) {

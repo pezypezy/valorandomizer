@@ -11,7 +11,8 @@
     "randomMeta": "Role based",
     "proTitle": "Pro Pick",
     "proDescription": "Draw from past pro team picks and use the result as a custom-game challenge.",
-    "proMeta": "Match based"
+    "proMeta": "Match based",
+    "select": "Select"
   },
   "roles": {
     "Duelist": "Duelist",
@@ -28,7 +29,9 @@
     "presets": "Presets",
     "balanced": "Balanced",
     "fullRandom": "Full Random",
-    "reset": "Reset"
+    "reset": "Reset",
+    "decreaseRole": "Decrease {role}",
+    "increaseRole": "Increase {role}"
   },
   "actions": {
     "randomize": "Summon",
@@ -38,12 +41,16 @@
     "reroll": "Reroll",
     "lock": "Lock",
     "locked": "Locked",
+    "rerollAgent": "Reroll {agent}",
+    "lockAgent": "Lock {agent}",
+    "unlockAgent": "Unlock {agent}",
     "copy": "Copy result",
     "copied": "Copied"
   },
   "result": {
     "heading": "Your Squad",
-    "empty": "Set your role composition and hit Summon."
+    "empty": "Set your role composition and hit Summon.",
+    "announcement": "Draw result: {agents}"
   },
   "proPick": {
     "heading": "Pro Pick Draft",
@@ -60,6 +67,7 @@
     "mirror": "Mirror",
     "pick": "Pick",
     "noPick": "No pick",
+    "noCommonMap": "The two teams have no map in common. Adjust the filters and try again.",
     "source": "Source",
     "detail": "DETAIL",
     "dataCounter": "Data {count}/{total}",
@@ -70,6 +78,8 @@
     "historyHeading": "Match Records",
     "historyCount": "{count} records",
     "historyClear": "Clear",
+    "historyClearConfirm": "Clear all match records?",
+    "historyStorageError": "Match records could not be saved in this browser.",
     "recordTeamA": "Team A win",
     "recordTeamB": "Team B win",
     "recordDraw": "Draw",
