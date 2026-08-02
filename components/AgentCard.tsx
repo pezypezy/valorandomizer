@@ -50,14 +50,17 @@ export function AgentCard({
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-deep)] via-transparent to-transparent" />
 
         {/* controls */}
-        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <IconButton title={t("actions.reroll")} onClick={onReroll}>
+        <div className="absolute right-2 top-2 flex flex-col gap-2">
+          <IconButton title={t("actions.rerollAgent", { agent: agent.name })} onClick={onReroll}>
             <RerollGlyph />
           </IconButton>
           <IconButton
-            title={locked ? t("actions.locked") : t("actions.lock")}
+            title={locked
+              ? t("actions.unlockAgent", { agent: agent.name })
+              : t("actions.lockAgent", { agent: agent.name })}
             onClick={onToggleLock}
             active={locked}
+            pressed={locked}
           >
             <LockGlyph open={!locked} />
           </IconButton>
@@ -97,20 +100,23 @@ function IconButton({
   title,
   onClick,
   active,
+  pressed,
 }: {
   children: React.ReactNode;
   title: string;
   onClick: () => void;
   active?: boolean;
+  pressed?: boolean;
 }) {
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
+      aria-pressed={pressed}
       onClick={onClick}
       className={clsx(
-        "flex h-8 w-8 items-center justify-center border border-white/20 backdrop-blur-sm transition-colors",
+        "flex h-11 w-11 items-center justify-center border border-white/20 backdrop-blur-sm transition-colors",
         active
           ? "bg-[var(--color-primary)] text-white"
           : "bg-black/40 text-white hover:bg-black/70",
@@ -123,7 +129,7 @@ function IconButton({
 
 function RerollGlyph() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 12a9 9 0 1 1-2.64-6.36" />
       <path d="M21 4v5h-5" />
     </svg>
@@ -132,7 +138,7 @@ function RerollGlyph() {
 
 function LockGlyph({ open }: { open: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <rect x="5" y="11" width="14" height="9" rx="1.5" />
       {open ? <path d="M8 11V8a4 4 0 0 1 7.5-2" /> : <path d="M8 11V8a4 4 0 0 1 8 0v3" />}
     </svg>

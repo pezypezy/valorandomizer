@@ -41,6 +41,15 @@ body {
   height: 100%;
 }
 
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.clip-btn:focus-visible {
+  outline-offset: -4px;
+}
+
 body {
   background-color: var(--color-bg-deep);
   color: var(--color-ink);
@@ -163,6 +172,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .bg-grid,
   .text-glitch {
     animation: none;

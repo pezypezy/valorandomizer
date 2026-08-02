@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
     "test": "node --import tsx --test lib/*.test.ts lib/discord/*.test.ts",
     "agents:sync": "tsx scripts/fetch-agents.ts",
     "discord:register": "node scripts/register-discord-commands.mjs",
@@ -17,13 +19,13 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.19.11",
+    "@opennextjs/cloudflare": "^1.20.2",
     "clsx": "^2.1.1",
-    "motion": "^12.40.0",
-    "next": "16.2.9",
-    "next-intl": "^4.13.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "motion": "^12.43.0",
+    "next": "16.2.12",
+    "next-intl": "^4.13.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -31,10 +33,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.1",
     "typescript": "^5",
-    "wrangler": "^4.103.0"
+    "wrangler": "^4.118.0"
   }
 }

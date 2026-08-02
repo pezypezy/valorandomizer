@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { AGENTS } from "@/lib/agents";
 import { DEFAULT_COUNTS, countByRole, pickTeam, totalCount, validateCounts, type RoleCounts } from "@/lib/picker";
 import { PRO_PICKS, type ProPick } from "@/lib/pro-picks";
+import { drawProPicks } from "@/lib/pro-pick-draw";
 import { ROLES, TEAM_SIZE, type Agent, type Role } from "@/lib/roles";
 import type { DiscordCommandMode, DiscordPublishResult } from "@/lib/discord/types";
 import { AgentCard } from "./AgentCard";
@@ -11,6 +12,11 @@ import { RoleStepper } from "./RoleStepper";
 import { Button } from "./ui/Button";
 
 const ALL = "all";
+
+function randomItem<T>(items: readonly T[]): T | undefined {
+  if (items.length === 0) return undefined;
+  return items[Math.floor(Math.random() * items.length)];
+}
 
 type PublishState =
   | { status: "idle" }
@@ -236,12 +242,12 @@ function DiscordRandomPicker({
   const valid = validateCounts(AGENTS, counts).ok;
 
   function changeCount(role: Role, delta: number) {
-    setCounts((previous) => {
-      const nextValue = previous[role] + delta;
-      if (nextValue < 0 || nextValue > available[role]) return previous;
-      if (delta > 0 && totalCount(previous) >= TEAM_SIZE) return previous;
-      return { ...previous, [role]: nextValue };
-    });
+    const nextValue = counts[role] + delta;
+    if (nextValue < 0 || nextValue > available[role]) return;
+    if (delta > 0 && totalCount(counts) >= TEAM_SIZE) return;
+    setCounts({ ...counts, [role]: nextValue });
+    setTeam(null);
+    setLocked(new Set());
   }
 
   function roll() {
@@ -258,7 +264,8 @@ function DiscordRandomPicker({
     const used = new Set(team.map((agent) => agent.id));
     const pool = AGENTS.filter((agent) => agent.role === target.role && !used.has(agent.id));
     if (pool.length === 0) return;
-    const replacement = pool[Math.floor(Math.random() * pool.length)];
+    const replacement = randomItem(pool);
+    if (!replacement) return;
     setTeam(team.map((agent, slot) => (slot === index ? replacement : agent)));
     setLocked((previous) => {
       const next = new Set(previous);
@@ -361,17 +368,31 @@ function DiscordProPicker({
       (filters.team === ALL || pick.team === filters.team)),
     [filters],
   );
+  const twoTeamCandidates = useMemo(() => {
+    const countByMap = new Map<string, number>();
+    for (const pick of candidates) {
+      countByMap.set(pick.map, (countByMap.get(pick.map) ?? 0) + 1);
+    }
+    const eligibleMaps = new Set(
+      [...countByMap.entries()]
+        .filter(([, count]) => count >= 2)
+        .map(([map]) => map),
+    );
+    return candidates.filter((pick) => eligibleMaps.has(pick.map));
+  }, [candidates]);
 
-  const canDraw = candidates.length >= pickCount;
+  const canDraw = pickCount === 1 ? candidates.length > 0 : twoTeamCandidates.length >= 2;
 
   function draw() {
     if (!canDraw) return;
-    const shuffled = [...candidates];
-    for (let index = shuffled.length - 1; index > 0; index--) {
-      const swap = Math.floor(Math.random() * (index + 1));
-      [shuffled[index], shuffled[swap]] = [shuffled[swap], shuffled[index]];
+    const drawn = pickCount === 1
+      ? drawProPicks(candidates, [], "single")
+      : drawProPicks(twoTeamCandidates, twoTeamCandidates, "both");
+    if (!drawn) {
+      setPicks([]);
+      return;
     }
-    setPicks(shuffled.slice(0, pickCount));
+    setPicks(drawn.right ? [drawn.left, drawn.right] : [drawn.left]);
   }
 
   function updateFilter(key: keyof ProFilters, value: string) {
@@ -412,7 +433,7 @@ function DiscordProPicker({
       ) : null}
 
       {picks.length > 0 ? (
-        <div className={`grid gap-3 ${picks.length === 2 ? "lg:grid-cols-2" : ""}`}>
+        <div className={`grid gap-3 ${picks.length === 2 ? "lg:grid-cols-2" : ""}`} aria-live="polite">
           {picks.map((pick, index) => (
             <article key={pick.id} className="border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
               <p className="font-display text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-primary)]">

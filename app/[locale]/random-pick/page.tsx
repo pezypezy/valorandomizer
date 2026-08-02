@@ -1,5 +1,14 @@
 import { setRequestLocale } from "next-intl/server";
+import { BackLink } from "@/components/BackLink";
 import { Picker } from "@/components/Picker";
+import { AGENTS } from "@/lib/agents";
+import { ROLES } from "@/lib/roles";
+import {
+  DEFAULT_COUNTS,
+  countByRole,
+  validateCounts,
+  type RoleCounts,
+} from "@/lib/picker";
 import { buildLocalizedMetadata } from "@/lib/seo";
 
 const META = {
@@ -23,8 +32,45 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/random-p
   return buildLocalizedMetadata(locale, { ...meta, path: "random-pick" });
 }
 
-export default async function RandomPickPage({ params }: PageProps<"/[locale]/random-pick">) {
+const AVAILABLE = countByRole(AGENTS);
+
+function readCountParam(
+  value: string | string[] | undefined,
+  fallback: number,
+  maximum: number,
+) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === undefined) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= maximum
+    ? parsed
+    : fallback;
+}
+
+function getInitialCounts(
+  searchParams: Record<string, string | string[] | undefined>,
+): RoleCounts {
+  const counts: RoleCounts = {
+    Duelist: readCountParam(searchParams.duelist, DEFAULT_COUNTS.Duelist, AVAILABLE.Duelist),
+    Initiator: readCountParam(searchParams.initiator, DEFAULT_COUNTS.Initiator, AVAILABLE.Initiator),
+    Controller: readCountParam(searchParams.controller, DEFAULT_COUNTS.Controller, AVAILABLE.Controller),
+    Sentinel: readCountParam(searchParams.sentinel, DEFAULT_COUNTS.Sentinel, AVAILABLE.Sentinel),
+  };
+  return validateCounts(AGENTS, counts).ok ? counts : DEFAULT_COUNTS;
+}
+
+export default async function RandomPickPage({ params, searchParams }: PageProps<"/[locale]/random-pick">) {
   const { locale } = await params;
+  const query = await searchParams;
+  const initialCounts = getInitialCounts(query);
   setRequestLocale(locale);
-  return <Picker initialMode="random" locale={locale} />;
+  return (
+    <div className="flex flex-col gap-10 pt-2">
+      <BackLink />
+      <Picker
+        key={ROLES.map((role) => initialCounts[role]).join("-")}
+        initialCounts={initialCounts}
+      />
+    </div>
+  );
 }

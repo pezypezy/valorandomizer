@@ -27,10 +27,17 @@ function bytesToBase64Url(bytes: Uint8Array): string {
 }
 
 function base64UrlToBytes(value: string): Uint8Array {
+  if (!/^[A-Za-z0-9_-]+$/u.test(value) || value.length % 4 === 1) {
+    throw new Error("Invalid base64url token");
+  }
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
   const binary = atob(padded);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  if (bytesToBase64Url(bytes) !== value) {
+    throw new Error("Non-canonical base64url token");
+  }
+  return bytes;
 }
 
 async function importSessionKey(secret: string): Promise<CryptoKey> {

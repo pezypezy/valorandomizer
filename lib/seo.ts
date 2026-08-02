@@ -50,7 +50,7 @@ export function buildLocalizedMetadata(
       alternateLocale: routing.locales.filter((item) => item !== locale).map((item) => OG_LOCALE[item]),
       images: [
         {
-          url: "/opengraph-image",
+          url: localizedUrl(locale, "opengraph-image"),
           width: 1200,
           height: 630,
           alt: "Valorandomizer — VALORANT Team Randomizer",
@@ -61,7 +61,7 @@ export function buildLocalizedMetadata(
       card: "summary_large_image",
       title: options.title,
       description: options.description,
-      images: ["/opengraph-image"],
+      images: [localizedUrl(locale, "opengraph-image")],
     },
   };
 }

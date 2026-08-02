@@ -1,23 +1,27 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AGENTS } from "@/lib/agents";
+import {
+  drawProPicks,
+  getCommonMaps,
+  type ProPickSideMode,
+} from "@/lib/pro-pick-draw";
+import {
+  clearMatchRecords,
+  saveMatchRecords,
+  useMatchRecords,
+  type MatchOutcome,
+  type MatchRecord,
+} from "@/lib/pro-pick-records";
 import { PRO_PICKS, type ProPick } from "@/lib/pro-picks";
 import { type Agent, ROLE_META } from "@/lib/roles";
 import { Button } from "./ui/Button";
 
-type SideMode = "both" | "single" | "mirror";
+type SideMode = ProPickSideMode;
 type DrawnPick = ProPick & { drawId: number };
-type MatchOutcome = "left" | "right" | "draw";
-type MatchRecord = {
-  id: string;
-  recordedAt: string;
-  outcome: MatchOutcome;
-  left: ProPick;
-  right: ProPick | null;
-};
 type PickFilters = {
   map: string;
   event: string;
@@ -30,9 +34,6 @@ type DrawDataEntry = {
 };
 
 const ALL = "all";
-const DEFAULT_FILTERS: PickFilters = { map: ALL, event: ALL, region: ALL, team: ALL };
-const RECORD_STORAGE_KEY = "valorandomizer.proPick.matchRecords";
-const MAX_RECORDS = 100;
 
 async function copyText(text: string) {
   try {
@@ -79,44 +80,29 @@ function writeFilterParams(params: URLSearchParams, suffix: "" | "B", filters: P
   }
 }
 
-export function ProPickPicker() {
+export function ProPickPicker({ initialQuery = "" }: { initialQuery?: string }) {
   const t = useTranslations();
-  const hydratedParams = useRef(false);
-  const [leftFilters, setLeftFilters] = useState<PickFilters>(DEFAULT_FILTERS);
-  const [rightFilters, setRightFilters] = useState<PickFilters>(DEFAULT_FILTERS);
-  const [sideMode, setSideMode] = useState<SideMode>("both");
-  const [left, setLeft] = useState<DrawnPick | null>(null);
-  const [right, setRight] = useState<DrawnPick | null>(null);
-  const [drawCounter, setDrawCounter] = useState(0);
-  const [records, setRecords] = useState<MatchRecord[]>([]);
-  const [showDataList, setShowDataList] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "url" | "result">("idle");
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(RECORD_STORAGE_KEY);
-      if (stored) setRecords(JSON.parse(stored) as MatchRecord[]);
-    } catch {
-      setRecords([]);
-    }
-  }, []);
-
   const maps = useMemo(() => unique(PRO_PICKS.map((pick) => pick.map)), []);
   const events = useMemo(() => unique(PRO_PICKS.map((pick) => pick.event)), []);
   const regions = useMemo(() => unique(PRO_PICKS.map((pick) => pick.region)), []);
   const teams = useMemo(() => unique(PRO_PICKS.map((pick) => pick.team)), []);
+  const initialParams = useMemo(() => new URLSearchParams(initialQuery), [initialQuery]);
+  const [leftFilters, setLeftFilters] = useState<PickFilters>(() =>
+    buildFiltersFromParams(initialParams, "", maps, events, regions, teams),
+  );
+  const [rightFilters, setRightFilters] = useState<PickFilters>(() =>
+    buildFiltersFromParams(initialParams, "B", maps, events, regions, teams),
+  );
+  const [sideMode, setSideMode] = useState<SideMode>(() => readSideMode(initialParams));
+  const [left, setLeft] = useState<DrawnPick | null>(null);
+  const [right, setRight] = useState<DrawnPick | null>(null);
+  const [drawCounter, setDrawCounter] = useState(0);
+  const records = useMatchRecords();
+  const [storageError, setStorageError] = useState(false);
+  const [showDataList, setShowDataList] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "url" | "result">("idle");
 
   useEffect(() => {
-    if (hydratedParams.current) return;
-    const params = new URL(window.location.href).searchParams;
-    setSideMode(readSideMode(params));
-    setLeftFilters(buildFiltersFromParams(params, "", maps, events, regions, teams));
-    setRightFilters(buildFiltersFromParams(params, "B", maps, events, regions, teams));
-    hydratedParams.current = true;
-  }, [events, maps, regions, teams]);
-
-  useEffect(() => {
-    if (!hydratedParams.current) return;
     if (!window.location.pathname.endsWith("/pro-pick")) return;
     const url = new URL(window.location.href);
     url.search = "";
@@ -133,6 +119,10 @@ export function ProPickPicker() {
 
   const leftCandidates = useMemo(() => filterPicks(leftFilters), [leftFilters]);
   const rightCandidates = useMemo(() => filterPicks(rightFilters), [rightFilters]);
+  const commonMaps = useMemo(
+    () => getCommonMaps(leftCandidates, rightCandidates),
+    [leftCandidates, rightCandidates],
+  );
   const drawDataEntries = useMemo(() => {
     if (sideMode !== "both") return leftCandidates.map((pick) => ({ side: "A" as const, pick }));
 
@@ -143,7 +133,14 @@ export function ProPickPicker() {
   }, [leftCandidates, rightCandidates, sideMode]);
   const drawDataCount = useMemo(() => new Set(drawDataEntries.map((entry) => entry.pick.id)).size, [drawDataEntries]);
 
-  const canPick = leftCandidates.length > 0 && (sideMode !== "both" || rightCandidates.length > 0);
+  const canPick =
+    leftCandidates.length > 0 &&
+    (sideMode !== "both" || commonMaps.length > 0);
+
+  function clearResult() {
+    setLeft(null);
+    setRight(null);
+  }
 
   function draw() {
     if (!canPick) {
@@ -152,22 +149,16 @@ export function ProPickPicker() {
       return;
     }
 
-    const nextDrawId = drawCounter + 1;
-    const first = withDrawId(pickOne(leftCandidates), nextDrawId);
-    let second: DrawnPick | null = null;
-
-    if (sideMode === "mirror") {
-      second = withDrawId(first, nextDrawId + 1000);
-    } else if (sideMode === "both") {
-      second = withDrawId(pickOne(rightCandidates), nextDrawId + 1000);
-      if (rightCandidates.length > 1) {
-        while (second.id === first.id) second = withDrawId(pickOne(rightCandidates), nextDrawId + 1000);
-      }
+    const drawn = drawProPicks(leftCandidates, rightCandidates, sideMode);
+    if (!drawn) {
+      clearResult();
+      return;
     }
 
+    const nextDrawId = drawCounter + 1;
     setDrawCounter(nextDrawId);
-    setLeft(first);
-    setRight(second);
+    setLeft(withDrawId(drawn.left, nextDrawId));
+    setRight(drawn.right ? withDrawId(drawn.right, nextDrawId + 1000) : null);
   }
 
   function recordMatch(outcome: MatchOutcome) {
@@ -182,15 +173,14 @@ export function ProPickPicker() {
         right: right ? stripDrawId(right) : null,
       },
       ...records,
-    ].slice(0, MAX_RECORDS);
+    ];
 
-    setRecords(nextRecords);
-    window.localStorage.setItem(RECORD_STORAGE_KEY, JSON.stringify(nextRecords));
+    setStorageError(!saveMatchRecords(nextRecords));
   }
 
   function clearRecords() {
-    setRecords([]);
-    window.localStorage.removeItem(RECORD_STORAGE_KEY);
+    if (!window.confirm(t("proPick.historyClearConfirm"))) return;
+    setStorageError(!clearMatchRecords());
   }
 
   function filterPicks(filters: PickFilters) {
@@ -208,6 +198,12 @@ export function ProPickPicker() {
     const updater = (filters: PickFilters) => ({ ...filters, [key]: value });
     if (side === "left") setLeftFilters(updater);
     else setRightFilters(updater);
+    clearResult();
+  }
+
+  function changeSideMode(value: SideMode) {
+    setSideMode(value);
+    clearResult();
   }
 
   async function copyCurrentUrl() {
@@ -232,9 +228,9 @@ export function ProPickPicker() {
           <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-[var(--color-sentinel)]">
             {t("landing.proEyebrow")}
           </p>
-          <h2 className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)] sm:text-4xl">
+          <h1 className="mt-2 font-display text-3xl font-bold text-[var(--color-ink)] sm:text-4xl">
             {t("proPick.heading")}
-          </h2>
+          </h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--color-muted)]">
             {t("proPick.subtitle")}
           </p>
@@ -246,6 +242,8 @@ export function ProPickPicker() {
           <button
             type="button"
             onClick={() => setShowDataList((value) => !value)}
+            aria-expanded={showDataList}
+            aria-controls="pro-pick-data-list"
             className="border border-[var(--color-line)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
           >
             {t("proPick.dataCounter", { count: drawDataCount, total: PRO_PICKS.length })}
@@ -260,7 +258,7 @@ export function ProPickPicker() {
           value={sideMode}
           values={["both", "single", "mirror"]}
           labels={{ both: t("proPick.both"), single: t("proPick.single"), mirror: t("proPick.mirror") }}
-          onChange={(value) => setSideMode(value as SideMode)}
+          onChange={changeSideMode}
         />
         <Button
           type="button"
@@ -275,7 +273,13 @@ export function ProPickPicker() {
         </Button>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-2">
+      {sideMode === "both" && leftCandidates.length > 0 && rightCandidates.length > 0 && commonMaps.length === 0 ? (
+        <p className="border border-[var(--color-primary)] px-4 py-3 text-center text-sm text-[var(--color-primary)]" role="alert">
+          {t("proPick.noCommonMap")}
+        </p>
+      ) : null}
+
+      <div className="grid gap-3 2xl:grid-cols-2">
         <FilterPanel
           title="Team A"
           filters={leftFilters}
@@ -304,7 +308,7 @@ export function ProPickPicker() {
         </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-2">
+      <div className="grid gap-3 2xl:grid-cols-2" aria-live="polite" aria-atomic="true">
         <PickResult key={left?.drawId ?? "left-empty"} label="Team A" pick={left} agentByName={agentByName} />
         <PickResult key={right?.drawId ?? "right-empty"} label="Team B" pick={right} agentByName={agentByName} />
       </div>
@@ -318,6 +322,11 @@ export function ProPickPicker() {
       ) : null}
 
       <MatchHistory records={records} canRecord={Boolean(left)} hasRight={Boolean(right)} onRecord={recordMatch} onClear={clearRecords} />
+      {storageError ? (
+        <p className="text-center text-sm text-[var(--color-primary)]" role="alert">
+          {t("proPick.historyStorageError")}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -326,7 +335,12 @@ function DrawDataList({ entries, onClose }: { entries: DrawDataEntry[]; onClose:
   const t = useTranslations();
 
   return (
-    <div className="absolute right-0 top-full z-30 mt-2 w-[min(calc(100vw-2rem),42rem)] border border-[var(--color-line)] bg-[var(--color-bg-deep)] p-3 shadow-2xl">
+    <div
+      id="pro-pick-data-list"
+      role="region"
+      aria-label={t("proPick.dataListHeading")}
+      className="absolute right-0 top-full z-30 mt-2 w-[min(calc(100vw-2rem),42rem)] border border-[var(--color-line)] bg-[var(--color-bg-deep)] p-3 shadow-2xl"
+    >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h3 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-muted)]">
@@ -409,7 +423,7 @@ function FilterPanel({
   );
 }
 
-function Select({
+function Select<T extends string>({
   label,
   value,
   values,
@@ -419,12 +433,12 @@ function Select({
   onChange,
 }: {
   label: string;
-  value: string;
-  values: string[];
-  labels?: Record<string, string>;
+  value: T;
+  values: readonly T[];
+  labels?: Partial<Record<T, string>>;
   allLabel?: string;
   disabled?: boolean;
-  onChange: (value: string) => void;
+  onChange: (value: T) => void;
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5">
@@ -432,7 +446,7 @@ function Select({
       <select
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(event.target.value as T)}
         className="min-h-10 w-full truncate border border-[var(--color-line)] bg-[var(--color-surface)] px-2.5 py-2 text-sm text-[var(--color-ink)] outline-none disabled:cursor-not-allowed disabled:opacity-45"
       >
         {values.map((item) => (
@@ -508,7 +522,7 @@ function MatchHistory({
   onRecord,
   onClear,
 }: {
-  records: MatchRecord[];
+  records: readonly MatchRecord[];
   canRecord: boolean;
   hasRight: boolean;
   onRecord: (outcome: MatchOutcome) => void;
@@ -596,8 +610,17 @@ function withDrawId(proPick: ProPick, drawId: number): DrawnPick {
   return { ...proPick, drawId };
 }
 
-function stripDrawId({ drawId: _drawId, ...pick }: DrawnPick): ProPick {
-  return pick;
+function stripDrawId(pick: DrawnPick): ProPick {
+  return {
+    id: pick.id,
+    event: pick.event,
+    match: pick.match,
+    map: pick.map,
+    region: pick.region,
+    team: pick.team,
+    agents: pick.agents,
+    source: pick.source,
+  };
 }
 
 function getOpponentLabel(proPick: ProPick) {
@@ -614,10 +637,6 @@ function getOutcomeLabel(record: MatchRecord, t: ReturnType<typeof useTranslatio
   if (record.outcome === "draw") return t("proPick.outcomeDraw");
   if (record.outcome === "left") return t("proPick.outcomeWinner", { team: record.left.team });
   return t("proPick.outcomeWinner", { team: record.right?.team ?? "Team B" });
-}
-
-function pickOne<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
 }
 
 function unique(items: string[]) {

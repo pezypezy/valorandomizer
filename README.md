@@ -29,7 +29,10 @@ Other scripts:
 
 ```bash
 pnpm build         # production Next.js build
-pnpm test          # unit tests for picker, filters, statistics, scoring, and Riot normalization
+pnpm lint          # full-project ESLint validation with zero warnings
+pnpm typecheck     # generate Next.js route types and run TypeScript
+pnpm test          # unit tests for picker, Discord, statistics, scoring, and Riot normalization
+pnpm check         # lint + typecheck + unit tests
 pnpm agents:sync   # re-fetch the agent roster + portraits
 pnpm cf:build      # build the OpenNext Cloudflare worker
 pnpm preview       # build and preview through Wrangler
@@ -38,13 +41,24 @@ pnpm deploy        # build and deploy through Wrangler
 
 ## Private ranked-meta beta
 
-The password-protected beta lives at:
+The home-page **AI Composition** card is the participant-facing entry point. It
+checks the shared password and then opens:
+
+```text
+/ja/ai-composition
+/en/ai-composition
+/ko/ai-composition
+```
+
+Operators can also use the direct administration/login entry point:
 
 ```text
 /ja/meta-beta
 /en/meta-beta
 /ko/meta-beta
 ```
+
+Both entry points render the same protected dashboard after authentication.
 
 It contains:
 
@@ -56,15 +70,13 @@ It contains:
 - Cloudflare rate limiting for login and chat requests;
 - D1-backed recommendation snapshots with a clearly marked sample-data fallback;
 - daily AI limits of 150 requests for the whole group and 20 requests per browser session;
-- an hourly opt-in Riot match collector and a daily 04:00 JST recommendation rebuild.
+- a ten-minute global Riot recent-match collector and a daily 04:00 JST recommendation rebuild.
 
 ### Data scope
 
-The initial collector is deliberately an **opt-in cohort**, not a claim to represent every Japanese ranked match. It starts from consented players in the private VALORANT group, fetches their official Riot match histories, deduplicates shared matches, and stores only anonymous team-level statistics.
+The live collector uses Riot's recent Competitive match endpoint for the supported `na`, `eu`, `ap`, and `kr` routes. It records discovered match IDs, retrieves details under a configurable per-run budget, deduplicates matches, and stores only the anonymous match/team fields needed for aggregate composition statistics.
 
-Player names and Riot IDs are not copied into the statistics tables. The retained statistical fields are limited to match ID, map, patch, time, team composition, rank bucket, winner, round score, and recommendation eligibility. The seed PUUID remains in the separate `tracked_players` operational table so the collector can poll the same consented account again.
-
-If Riot later approves broader or RSO-backed access, the collector interface can be expanded without changing the scoring, daily aggregation, recommendation API, or dashboard.
+Player names, Riot IDs, and PUUIDs are not persisted in the aggregate dataset. The retained fields are limited to source route/group, match ID, map, patch, time, team composition, rank bucket, winner, round score, and recommendation eligibility. See [`docs/global-ranked-data-source.md`](docs/global-ranked-data-source.md) for the source and privacy contract.
 
 ### Required secrets and variables
 
@@ -78,7 +90,7 @@ wrangler secret put RIOT_API_KEY
 
 Use a random value of at least 32 bytes for `META_BETA_AUTH_SECRET`. For local development, put the same names in `.dev.vars` and do not commit that file.
 
-After Riot confirms the approved VALORANT routing host, configure `RIOT_VAL_BASE_URL` as a Worker variable in `wrangler.jsonc` or the Cloudflare dashboard. The API key stays server-side and is sent only through the `X-Riot-Token` request header.
+The API key stays server-side and is sent only through the `X-Riot-Token` request header. Optionally configure `RIOT_MATCH_DETAIL_BUDGET` as a Worker variable (1–250, default 120) to cap detail requests in each ten-minute collection run.
 
 Workers AI is bound as `AI` in `wrangler.jsonc` and currently uses:
 
@@ -90,18 +102,23 @@ Unrelated messages are rejected before the Workers AI call and do not consume AI
 
 ### D1 setup
 
-Create the database:
+Use the setup helper to create or discover the database, write the `DB` binding
+to `wrangler.jsonc`, apply migrations, and configure secrets:
 
 ```bash
-wrangler d1 create valorandomizer
+pnpm meta:setup
 ```
 
-Copy the generated `database_id` into the commented `d1_databases` block in `wrangler.jsonc`, then apply migrations:
+Review the generated binding before committing it. To apply migrations manually
+to an already bound database, run:
 
 ```bash
 wrangler d1 migrations apply valorandomizer --local
 wrangler d1 migrations apply valorandomizer --remote
 ```
+
+See [`docs/ranked-meta-setup.md`](docs/ranked-meta-setup.md) for non-interactive,
+secret-free, and deploy options.
 
 The schema under `migrations/` includes:
 
@@ -109,22 +126,8 @@ The schema under `migrations/` includes:
 - daily map/rank composition statistics, including an `All` rank bucket;
 - rolling recommendation snapshots;
 - global and per-session AI usage counters;
-- opt-in tracked-player and collection-run operational tables;
+- global match-discovery, ingest-run, route-group, and dataset-coverage tables;
 - Riot content map aliases.
-
-A consented seed account can be inserted after its PUUID is obtained through the approved flow:
-
-```sql
-INSERT INTO tracked_players (
-  puuid, routing_region, dataset_region, source_type,
-  consented_at, enabled, next_poll_at, created_at, updated_at
-) VALUES (
-  '<PUUID>', '<RIOT_ROUTING_REGION>', 'jp', 'rso',
-  unixepoch(), 1, 0, unixepoch(), unixepoch()
-);
-```
-
-Do not insert a player who has not opted in.
 
 Until three recommendation rows exist for the selected map and rank, `/api/meta-beta/stats` returns clearly marked sample data. The dashboard switches automatically to `D1 snapshot` after real rows are available.
 
@@ -132,7 +135,7 @@ Until three recommendation rows exist for the selected map and rank, `/api/meta-
 
 Cloudflare cron expressions are UTC:
 
-- `17 * * * *` — poll due opt-in players every hour, deduplicate new matches, and rebuild affected daily statistics;
+- `*/10 * * * *` — discover recent Competitive matches across supported routes, fetch a bounded number of details, and rebuild affected daily statistics;
 - `0 19 * * *` — at 04:00 JST, combine the current patch's last seven days and write theory, off-meta, and solo-queue recommendation snapshots.
 
 The AI allowance follows Workers AI's daily reset boundary at `00:00 UTC`, which is `09:00 JST`. Usage counters use the same UTC date key so the UI and provider reset together.
@@ -157,22 +160,22 @@ Five-duelist, no-controller, duplicate-agent, undersampled, malformed, and simil
 - `lib/meta-beta/relevance.ts` — token-free scope and prompt-injection filter.
 - `lib/meta-beta/riot-client.ts` — server-side Riot content, matchlist, and match requests.
 - `lib/meta-beta/normalize-match.ts` — anonymous match/team normalization.
-- `lib/meta-beta/collection.ts` — opt-in polling, duplicate prevention, and persistence.
+- `lib/meta-beta/riot-global-collector.ts` — recent-match discovery, retry/backoff, detail retrieval, and deduplication.
+- `lib/meta-beta/global-ingest.ts` — provider-neutral normalization and global aggregate persistence.
 - `lib/meta-beta/daily-stats.ts` — daily map/rank and `All`-rank aggregates.
 - `lib/meta-beta/scoring.ts` — Bayesian/Wilson correction, exclusions, and category scores.
 - `lib/meta-beta/aggregation.ts` — rolling seven-day recommendation snapshot writer.
 - `lib/meta-beta/stats.ts` — D1 recommendation lookup with sample fallback.
 - `lib/meta-beta/quota.ts` — D1-backed daily AI allowance reservation and status.
-- `custom-worker.ts` — OpenNext fetch handler plus hourly and daily cron handlers.
+- `custom-worker.ts` — OpenNext fetch handler plus ten-minute collection and daily rebuild cron handlers.
 - `app/api/meta-beta/` — login/logout, stats, quota, collection-status, and guarded AI endpoints.
 - `components/meta/MetaBetaDashboard.tsx` — the private ranked-meta dashboard and chat UI.
 
 ## Roadmap
 
-- **Approval/auth phase** — obtain the appropriate Riot production access and RSO flow for consented users.
-- **Cohort validation phase** — run the ten-person group, review sample size, scoring behavior, and AI usefulness.
-- **Japan expansion phase** — expand the consented Japanese cohort or use an approved broader data source.
-- **International phase** — add the existing language regions, then worldwide coverage.
+- **Production access** — maintain the required Riot production API approval and monitor rate limits.
+- **Coverage validation** — review route/rank sample sizes, scoring behavior, and recommendation usefulness.
+- **Source enrichment** — add server-cluster data only from an explicitly approved source with compatible terms.
 
 ## Credits
 

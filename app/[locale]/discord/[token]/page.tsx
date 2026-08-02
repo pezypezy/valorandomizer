@@ -25,7 +25,10 @@ export default async function DiscordSessionPage({ params }: DiscordSessionPageP
   const locale = session?.locale ?? (requestedLocale === "ja" || requestedLocale === "ko" ? requestedLocale : "en");
   setRequestLocale(locale);
 
-  if (!session || Date.now() >= session.expiresAt) {
+  // This force-dynamic server route must evaluate expiration at request time.
+  // eslint-disable-next-line react-hooks/purity
+  const sessionExpired = !session || Date.now() >= session.expiresAt;
+  if (sessionExpired) {
     const message = locale === "ja"
       ? "このDiscordリンクは無効または期限切れです。Discordでもう一度コマンドを実行してください。"
       : locale === "ko"

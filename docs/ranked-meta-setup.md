@@ -9,7 +9,7 @@ This guide activates the password-protected ranked-meta beta after the code has 
 - access to the Cloudflare account that owns the `valorandomizer` Worker
 - Wrangler authentication (`pnpm exec wrangler login`) or `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
 
-Riot credentials are optional for the first UI/AI test. Without them, the beta uses clearly labelled sample statistics and the hourly live collector skips itself.
+Riot credentials are optional for the first UI/AI test. Without them, the beta uses clearly labelled sample statistics and the ten-minute live collector skips itself.
 
 ## Automated setup
 
@@ -89,22 +89,31 @@ When `--deploy` was not used, deploy after reviewing the generated binding:
 pnpm deploy
 ```
 
-Then open the private URL directly:
+Participants normally unlock the feature from the home-page **AI Composition**
+card and continue to:
+
+```text
+https://valo-randomizer.com/ja/ai-composition
+```
+
+Operators can instead open the direct login/dashboard route:
 
 ```text
 https://valo-randomizer.com/ja/meta-beta
 ```
 
-The beta is intentionally absent from the public site header.
+Both routes use the same protected dashboard. The direct route redirects an
+unauthenticated browser to `/ja/meta-beta/login`; the participant route returns
+an unauthenticated browser to the home-page access card.
 
 ## Riot collection
 
 Live collection additionally requires:
 
-- an approved Riot production application and API key;
-- the approved VALORANT routing host configured as `RIOT_VAL_BASE_URL`;
-- consented player PUUIDs inserted through the approved RSO/consent flow.
+- an approved Riot production application and `RIOT_API_KEY` secret;
+- the official Riot recent-match and match-detail endpoints for the supported routes;
+- optionally, a `RIOT_MATCH_DETAIL_BUDGET` Worker variable between 1 and 250 (default 120).
 
-When those values are absent, authentication, sample statistics, D1 quota accounting, and Workers AI testing can still operate. The hourly collector logs that Riot collection is disabled and exits without failing the site.
+When the API key is absent, authentication, sample statistics, D1 quota accounting, and Workers AI testing can still operate. The ten-minute collector logs that Riot collection is disabled and exits without failing the site.
 
-Do not register an account that has not explicitly opted in. The initial ten-person dataset is a cohort test, not representative Japan-wide statistics.
+The global aggregate dataset does not persist player names, Riot IDs, or PUUIDs. See [`global-ranked-data-source.md`](global-ranked-data-source.md) for the route, privacy, and source-acceptance requirements.

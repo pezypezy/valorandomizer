@@ -8,6 +8,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import { Backdrop } from "@/components/ui/Backdrop";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MotionProvider } from "@/components/MotionProvider";
 import "../globals.css";
 
 const orbitron = Orbitron({
@@ -86,14 +87,16 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
         />
         <NextIntlClientProvider>
-          <Backdrop />
-          <div className="relative z-10 flex min-h-screen flex-col">
-            <SiteHeader />
-            <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 sm:px-6">
-              {children}
-            </main>
-            <SiteFooter locale={locale} />
-          </div>
+          <MotionProvider>
+            <Backdrop />
+            <div className="relative z-10 flex min-h-screen flex-col">
+              <SiteHeader />
+              <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 sm:px-6">
+                {children}
+              </main>
+              <SiteFooter locale={locale} />
+            </div>
+          </MotionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

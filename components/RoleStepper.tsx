@@ -45,6 +45,7 @@ export function RoleStepper({
         <div className="flex items-center justify-between gap-3">
           <StepBtn
             label="−"
+            ariaLabel={t("config.decreaseRole", { role: t(`roles.${role}`) })}
             onClick={() => onChange(-1)}
             disabled={count <= 0}
             accent={accent}
@@ -57,6 +58,7 @@ export function RoleStepper({
           </span>
           <StepBtn
             label="+"
+            ariaLabel={t("config.increaseRole", { role: t(`roles.${role}`) })}
             onClick={() => onChange(1)}
             disabled={!canIncrement}
             accent={accent}
@@ -69,11 +71,13 @@ export function RoleStepper({
 
 function StepBtn({
   label,
+  ariaLabel,
   onClick,
   disabled,
   accent,
 }: {
   label: string;
+  ariaLabel: string;
   onClick: () => void;
   disabled: boolean;
   accent: string;
@@ -81,10 +85,11 @@ function StepBtn({
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        "flex h-9 w-9 items-center justify-center border text-lg leading-none transition-colors",
+        "flex h-11 w-11 items-center justify-center border text-lg leading-none transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-30",
         "border-[var(--color-line)] bg-[var(--color-surface-2)] hover:bg-[var(--color-surface)]",
       )}

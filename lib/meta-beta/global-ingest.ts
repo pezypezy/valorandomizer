@@ -294,12 +294,6 @@ export async function ingestGlobalRankedBatch(
     await finishIngestRun(db, runId, Math.floor(Date.now() / 1000), result);
     return result;
   } catch (error) {
-    const result: GlobalIngestResult = {
-      ...normalized,
-      matchesInserted,
-      matchesSkipped,
-      dailyStatsRebuilt: 0,
-    };
     if (runId !== null) {
       await db.prepare(
         `UPDATE global_ingest_runs

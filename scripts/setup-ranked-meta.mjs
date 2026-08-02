@@ -205,7 +205,8 @@ async function main() {
     console.log("Review `git diff -- wrangler.jsonc`, commit the D1 ID, then run `pnpm deploy`.");
   }
 
-  console.log("Private beta URL after deployment: https://valo-randomizer.com/ja/ai-composition");
+  console.log("Participant URL after deployment: https://valo-randomizer.com/ja/ai-composition");
+  console.log("Direct operator login: https://valo-randomizer.com/ja/meta-beta");
   console.log("Live global collection requires Riot production access and the RIOT_API_KEY secret.");
 }
 

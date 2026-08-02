@@ -29,7 +29,7 @@ export default function OpenGraphImage() {
               "linear-gradient(135deg, rgba(255,70,85,0.22), transparent 42%), radial-gradient(circle at 85% 20%, rgba(255,70,85,0.18), transparent 28%)",
           }}
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: 18, zIndex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ fontSize: 28, letterSpacing: 8, color: "#ff4655", fontWeight: 700 }}>
             VALORANDOMIZER
           </div>
@@ -37,7 +37,7 @@ export default function OpenGraphImage() {
             VALORANT Team Composition Randomizer
           </div>
         </div>
-        <div style={{ display: "flex", gap: 22, fontSize: 30, zIndex: 1 }}>
+        <div style={{ display: "flex", gap: 22, fontSize: 30 }}>
           <span>RANDOM PICK</span>
           <span style={{ color: "#ff4655" }}>×</span>
           <span>PRO PICK</span>

@@ -1,6 +1,6 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 
 export default defineCloudflareConfig({
-  // Incremental cache / queue / tag cache can be added here later
-  // (e.g. R2 + D1) when Phase 2 introduces persistence.
+  // Application data uses the D1 binding configured in wrangler.jsonc.
+  // OpenNext cache and queue bindings can be added independently when needed.
 });

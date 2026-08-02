@@ -1,5 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
-import { Picker } from "@/components/Picker";
+import { BackLink } from "@/components/BackLink";
+import { ProPickPicker } from "@/components/ProPickPicker";
 import { buildLocalizedMetadata } from "@/lib/seo";
 
 const META = {
@@ -23,8 +24,24 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/pro-pick
   return buildLocalizedMetadata(locale, { ...meta, path: "pro-pick" });
 }
 
-export default async function ProPickPage({ params }: PageProps<"/[locale]/pro-pick">) {
+function toQueryString(searchParams: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (Array.isArray(value)) value.forEach((item) => query.append(key, item));
+    else if (value !== undefined) query.set(key, value);
+  }
+  return query.toString();
+}
+
+export default async function ProPickPage({ params, searchParams }: PageProps<"/[locale]/pro-pick">) {
   const { locale } = await params;
+  const query = await searchParams;
+  const initialQuery = toQueryString(query);
   setRequestLocale(locale);
-  return <Picker initialMode="pro" locale={locale} />;
+  return (
+    <div className="flex flex-col gap-10 pt-2">
+      <BackLink />
+      <ProPickPicker key={initialQuery} initialQuery={initialQuery} />
+    </div>
+  );
 }
