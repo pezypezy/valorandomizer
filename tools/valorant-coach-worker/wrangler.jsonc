@@ -1,0 +1,17 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "valorant-coach-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "VALORANT_REGION": "ap",
+    "VALORANT_PLATFORM": "pc",
+    "VALORANT_NAME": "宝仙堂の凄十",
+    "VALORANT_TAG": "4545",
+    "DEFAULT_DAYS": "3",
+    "BASELINE_DAYS": "14"
+  }
+}
